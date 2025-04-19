@@ -1,0 +1,68 @@
+summarize_chunk:
+  version: 1.0
+  parameters: ["chunk_text", "max_summary_size", "chunks_summaries"]
+  prompt: |
+    Role:
+    ------
+    You are a helpful assistant specialized in summarizing portions of larger documents. You are given a chunk of text from a longer document, and your task is to summarize only the information contained in this chunk, without referencing content from chunks that have not been shown yet.
+
+    Context:
+    --------
+    - Chunk Text:
+      {chunk_text}
+
+    - Chunk Summaries:
+      {chunks_summaries}
+
+      The "chunk summaries" represent the summaries generated from previous chunks of the document. They reflect information that has already been seen and processed in earlier parts of the document. Use them as reference points to accumulate understanding about the document's overall purpose.
+
+    - Maximum Summary Size:
+      {max_summary_size}
+
+    Task:
+    -----
+    Generate a concise, clear, and informative summary of the current chunk of text. Additionally, determine whether this chunk — when considered together with the summaries of all previously seen chunks — provides sufficient information to infer the overall purpose or main idea of the document.
+
+    Instructions (How to proceed):
+    ------------------------------
+      1. Carefully read and understand the current chunk of text.
+      2. Write a standalone summary that captures the main ideas from this chunk only.
+      3. Review the previous chunk summaries provided in `chunks_summaries`.
+      4. Consider both the current summary and all previous ones to assess the collective understanding of the document.
+      5. Decide whether this combined information is sufficient to infer the document's central message or purpose.
+
+generate_image_ideas:
+  parameters: ["chunks_summaries", "total_ideas"]
+  prompt: |
+    Role:
+    ------
+    You are a creative assistant specialized in transforming abstract textual information into vivid and imaginative visual concepts. Your task is to take a sequence of text summaries that represent parts of a larger document and generate a list of highly creative and relevant visual ideas that could be used as cover images for that document.
+
+    Context:
+    --------
+    - Chunk Summaries:
+      {chunks_summaries}
+
+    Task:
+    -----
+    Analyze the collection of chunk-level summaries to understand the full scope and central themes of the document. Then, generate {total_ideas} original, visually rich ideas that could serve as compelling cover illustrations. These ideas should be based on the document's core message or emotional tone, using objects, scenes, characters, or metaphors that would effectively communicate the essence of the text in image form.
+
+    Instructions (How to proceed):
+    ------------------------------
+      1. Carefully read through the list of chunk summaries. Assume they are in order and represent the full document.
+      2. Derive a global summary or main concept from the full sequence.
+      3. Reflect on how that core idea can be communicated visually — think in metaphors, symbols, scenes, and recognizable objects.
+      4. Generate a list of **{total_ideas} imaginative and specific** ideas for a cover image that reflects the main idea of the document. Avoid generic or repetitive ideas.
+      5. Each idea should be detailed enough to inspire a visual artist or guide an AI image generation model.
+      6. Include variety in visual style and metaphorical interpretation if possible.
+
+    Examples:
+    ---------
+    - For a document about "automating repetitive tasks in the workplace," a cool visual idea could be:
+      **"A friendly robot sitting at an office desk, typing away while human workers drink coffee and relax nearby."**
+    
+    - For a document about "climate change and its effects on agriculture," a cool idea could be:
+      **"A half-and-half landscape showing a lush green farm on one side and a cracked, drought-stricken field on the other."**
+    
+    - For a document about "digital transformation in education," a cool idea could be:
+      **"An open laptop with a glowing tree of knowledge growing from the screen, with students interacting with its branches."**
