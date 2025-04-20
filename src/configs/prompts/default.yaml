@@ -1,6 +1,5 @@
 summarize_chunk:
-  version: 1.0
-  parameters: ["chunk_text", "max_summary_size", "chunks_summaries"]
+  parameters: ["chunk_text", "max_chunk_summary_size", "chunks_summaries"]
   prompt: |
     Role:
     ------
@@ -17,7 +16,7 @@ summarize_chunk:
       The "chunk summaries" represent the summaries generated from previous chunks of the document. They reflect information that has already been seen and processed in earlier parts of the document. Use them as reference points to accumulate understanding about the document's overall purpose.
 
     - Maximum Summary Size:
-      {max_summary_size}
+      {max_chunk_summary_size}
 
     Task:
     -----
@@ -31,38 +30,77 @@ summarize_chunk:
       4. Consider both the current summary and all previous ones to assess the collective understanding of the document.
       5. Decide whether this combined information is sufficient to infer the document's central message or purpose.
 
-generate_image_ideas:
-  parameters: ["chunks_summaries", "total_ideas"]
+generate_global_summary:
+  parameters: ["chunks_summaries", "max_global_summary_size"]
   prompt: |
     Role:
     ------
-    You are a creative assistant specialized in transforming abstract textual information into vivid and imaginative visual concepts. Your task is to take a sequence of text summaries that represent parts of a larger document and generate a list of highly creative and relevant visual ideas that could be used as cover images for that document.
+    You are an assistant specialized in synthesizing multiple text segments into a single, coherent global summary. Your input is a sequence of summaries from different parts of a larger document.
 
     Context:
     --------
     - Chunk Summaries:
       {chunks_summaries}
 
+    - Maximum Summary Size:
+      {max_global_summary_size}
+
     Task:
     -----
-    Analyze the collection of chunk-level summaries to understand the full scope and central themes of the document. Then, generate {total_ideas} original, visually rich ideas that could serve as compelling cover illustrations. These ideas should be based on the document's core message or emotional tone, using objects, scenes, characters, or metaphors that would effectively communicate the essence of the text in image form.
+    Create a global summary that captures the central themes, purpose, and tone of the document as a whole.
 
-    Instructions (How to proceed):
-    ------------------------------
-      1. Carefully read through the list of chunk summaries. Assume they are in order and represent the full document.
-      2. Derive a global summary or main concept from the full sequence.
-      3. Reflect on how that core idea can be communicated visually — think in metaphors, symbols, scenes, and recognizable objects.
-      4. Generate a list of **{total_ideas} imaginative and specific** ideas for a cover image that reflects the main idea of the document. Avoid generic or repetitive ideas.
-      5. Each idea should be detailed enough to inspire a visual artist or guide an AI image generation model.
-      6. Include variety in visual style and metaphorical interpretation if possible.
+    Instructions:
+    -------------
+      1. Read all chunk summaries in order.
+      2. Identify recurring patterns, central messages, or overarching arguments.
+      3. Merge these insights into a single coherent and concise summary.
+      4. Ensure the summary does not exceed the given size constraint.
+
+
+generate_image_prompts:
+  parameters: ["global_summary", "total_prompts_to_generate"]
+  prompt: |
+    Role:
+    ------
+    You are a creative assistant specialized in transforming abstract summaries into vivid, simple, and tangible visual prompts for AI image generation tools.
+
+    Context:
+    --------
+    - Global Summary:
+      {global_summary}
+
+    - Number of Prompts to Generate:
+      {total_prompts_to_generate}
+
+    Task:
+    -----
+    Based on the global summary, generate {total_prompts_to_generate} **concrete, imaginative, and visually descriptive prompts** that could be used to generate cover illustrations using an AI image generator.
+
+    Instructions:
+    -------------
+      1. Read the global summary and extract its main idea or central theme.
+      2. Think of **visual metaphors** or **tangible objects/scenes** that would represent that idea clearly in a single image.
+      3. Make each idea **simple yet creative** — it should depict something that can be drawn in one frame, with a clear subject.
+      4. Include specific visual details like:
+         - The subject (what is being shown)
+         - The scene or action (what is happening)
+         - Visual style (optional, e.g. digital painting, sketch, photorealistic)
+         - Mood or atmosphere (e.g. calm, chaotic, optimistic)
+         - Any props, outfits, or key objects
 
     Examples:
     ---------
-    - For a document about "automating repetitive tasks in the workplace," a cool visual idea could be:
-      **"A friendly robot sitting at an office desk, typing away while human workers drink coffee and relax nearby."**
-    
-    - For a document about "climate change and its effects on agriculture," a cool idea could be:
-      **"A half-and-half landscape showing a lush green farm on one side and a cracked, drought-stricken field on the other."**
-    
-    - For a document about "digital transformation in education," a cool idea could be:
-      **"An open laptop with a glowing tree of knowledge growing from the screen, with students interacting with its branches."**
+    - If the document is about **building mazes**, a good image prompt could be:
+      **"A person standing confused in the middle of a large, winding maze, viewed from above, digital painting style."**
+
+    - If the document is about **automating email workflows**, a good image prompt could be:
+      **"A friendly robot wearing a mailman uniform, holding a stack of glowing digital letters, standing in front of a computer dashboard."**
+
+    - If the document is about **data protection**, a good image prompt could be:
+      **"A vault door with glowing circuit lines, locked by a fingerprint scanner, in a futuristic style."**
+
+    Constraints:
+    ------------
+      - Do **not** include abstract or philosophical phrases like “freedom” or “intelligence” by themselves.
+      - The image must be easy for an AI to interpret and generate.
+      - Avoid multi-scene narratives; keep each prompt visually simple and focused.

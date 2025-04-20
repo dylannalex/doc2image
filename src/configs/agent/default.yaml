@@ -1,4 +1,5 @@
-total_ideas: 10
-max_summary_size: 200
+total_prompts_to_generate: 10
+max_chunk_summary_size: 200
+max_global_summary_size: 1000
 model: "llama3.1:8b"
 temperature: 0.7

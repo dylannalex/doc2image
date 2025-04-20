@@ -10,7 +10,8 @@ class AgentState(TypedDict):
     current_chunk_index: int
     chunks_summaries: list[str]
     is_sufficient: bool
-    generated_ideas: list[str]
+    global_summary: str
+    image_prompts: list[str]
 
 
 class _ChunkSummaryOutput(BaseModel):
@@ -24,10 +25,10 @@ class _ChunkSummaryOutput(BaseModel):
     )
 
 
-class _GeneratedIdeas(BaseModel):
-    ideas: list[str] = Field(
+class _ImagePrompts(BaseModel):
+    prompts: list[str] = Field(
         ...,
-        description="List of image ideas generated from the chunk summaries.",
+        description="List of image prompts based on the document summary.",
     )
 
 
@@ -37,7 +38,7 @@ def summarize_chunk_node(state: AgentState, config: RunnableConfig):
     chunks_summaries = state["chunks_summaries"]
     chunk_text = config["configurable"]["chunks"][chunk_idx]
     prompt_str = config["configurable"]["summarize_chunk_prompt"]
-    max_summary_size = config["configurable"]["max_summary_size"]
+    max_chunk_summary_size = config["configurable"]["max_chunk_summary_size"]
     llm = config["configurable"]["llm_model"]
 
     # Invoke the LLM to summarize the chunk
@@ -47,7 +48,7 @@ def summarize_chunk_node(state: AgentState, config: RunnableConfig):
     summary: _ChunkSummaryOutput = chain.invoke(
         {
             "chunk_text": chunk_text,
-            "max_summary_size": max_summary_size,
+            "max_chunk_summary_size": max_chunk_summary_size,
             "chunks_summaries": chunks_summaries,
         }
     )
@@ -65,30 +66,55 @@ def summarize_chunk_node(state: AgentState, config: RunnableConfig):
     return state
 
 
-def generate_image_ideas_node(state: AgentState, config: RunnableConfig):
+def generate_global_summary_node(state: AgentState, config: RunnableConfig):
     # Extract the prompt parameters
     chunks_summaries = state["chunks_summaries"]
-    total_ideas = config["configurable"]["total_ideas"]
-    prompt_str = config["configurable"]["generate_image_ideas"]
+    max_global_summary_size = config["configurable"]["max_global_summary_size"]
+    prompt_str = config["configurable"]["generate_global_summary_prompt"]
+    llm = config["configurable"]["llm_model"]
+
+    # Invoke the LLM to generate the global summary
+    prompt = ChatPromptTemplate.from_template(prompt_str)
+    chain = prompt | llm | StrOutputParser()
+    global_summary: str = chain.invoke(
+        {
+            "chunks_summaries": chunks_summaries,
+            "max_global_summary_size": max_global_summary_size,
+        }
+    )
+
+    # Update the state with the global summary
+    state["global_summary"] = global_summary
+
+    print(f"[Agent] Generated global summary: {global_summary}")
+
+    return state
+
+
+def generate_image_prompts_node(state: AgentState, config: RunnableConfig):
+    # Extract the prompt parameters
+    global_summary = state["global_summary"]
+    total_prompts_to_generate = config["configurable"]["total_prompts_to_generate"]
+    prompt_str = config["configurable"]["generate_image_prompts_prompt"]
     llm = config["configurable"]["llm_model"]
 
     # Invoke the LLM to generate image ideas
-    structured_llm = llm.with_structured_output(_GeneratedIdeas)
+    structured_llm = llm.with_structured_output(_ImagePrompts)
     prompt = ChatPromptTemplate.from_template(prompt_str)
     chain = prompt | structured_llm
-    generated_ideas: _GeneratedIdeas = chain.invoke(
+    image_prompts: _ImagePrompts = chain.invoke(
         {
-            "chunks_summaries": chunks_summaries,
-            "total_ideas": total_ideas,
+            "global_summary": global_summary,
+            "total_prompts_to_generate": total_prompts_to_generate,
         }
     )
 
     # Update the state with the generated image ideas
-    state["generated_ideas"] = generated_ideas.ideas
+    state["image_prompts"] = image_prompts.prompts
 
-    print("[Agent] Generated image ideas:")
-    for idx, idea in enumerate(generated_ideas.ideas):
-        print(f"\t[-] Idea {idx + 1}: {idea}")
+    print("[Agent] Generated image prompts:")
+    for idx, idea in enumerate(image_prompts.prompts):
+        print(f"\t[-] Prompts {idx + 1}: {idea}")
 
     return state
 
@@ -116,4 +142,4 @@ def continue_summarizing_conditional_edge(
     if chunk_idx < total_chunks and not is_sufficient:
         return "summarize_chunk"
 
-    return "generate_image_ideas"
+    return "generate_global_summary"

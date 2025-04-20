@@ -6,32 +6,36 @@ from langchain_core.language_models import BaseLanguageModel
 from doc2image.agent.components import (
     AgentState,
     summarize_chunk_node,
-    generate_image_ideas_node,
+    generate_global_summary_node,
+    generate_image_prompts_node,
     continue_summarizing_conditional_edge,
 )
 
 
 @dataclass
 class AgentOutput:
-    chunks_summaries: list[str]
-    generated_ideas: list[str]
+    global_summary: str
+    generated_prompts: list[str]
 
 
 class Agent:
     def __init__(
         self,
         llm: BaseLanguageModel,
-        max_summary_size: int,
-        total_ideas: int,
+        max_chunk_summary_size: int,
+        max_global_summary_size: int,
+        total_prompts_to_generate: int,
         summarize_chunk_prompt: str,
-        generate_image_ideas_prompt: str,
+        generate_image_prompts_prompt: str,
+        generate_global_summary_prompt: str,
     ) -> None:
         self.llm = llm
-        self.max_summary_size = max_summary_size
-        self.total_ideas = total_ideas
+        self.max_chunk_summary_size = max_chunk_summary_size
+        self.max_global_summary_size = max_global_summary_size
+        self.total_prompts_to_generate = total_prompts_to_generate
         self.summarize_chunk_prompt = summarize_chunk_prompt
-        self.generate_image_ideas_prompt = generate_image_ideas_prompt
-
+        self.generate_image_prompts_prompt = generate_image_prompts_prompt
+        self.generate_global_summary_prompt = generate_global_summary_prompt
         self._init_graph()
 
     def _init_graph(self) -> None:
@@ -40,7 +44,8 @@ class Agent:
 
         # Define the nodes in the graph
         graph.add_node("summarize_chunk", summarize_chunk_node)
-        graph.add_node("generate_image_ideas", generate_image_ideas_node)
+        graph.add_node("generate_global_summary", generate_global_summary_node)
+        graph.add_node("generate_image_prompts", generate_image_prompts_node)
 
         # Define the edges in the graph
         graph.add_conditional_edges(
@@ -48,13 +53,14 @@ class Agent:
             continue_summarizing_conditional_edge,
             {
                 "summarize_chunk": "summarize_chunk",
-                "generate_image_ideas": "generate_image_ideas",
+                "generate_global_summary": "generate_global_summary",
             },
         )
+        graph.add_edge("generate_global_summary", "generate_image_prompts")
 
         # Set the entry point and end nodes
         graph.set_entry_point("summarize_chunk")
-        graph.add_edge("generate_image_ideas", END)
+        graph.add_edge("generate_image_prompts", END)
 
         # Compile the graph
         self.graph = graph.compile()
@@ -65,9 +71,11 @@ class Agent:
                 "total_chunks": len(chunks),
                 "chunks": chunks,
                 "summarize_chunk_prompt": self.summarize_chunk_prompt,
-                "generate_image_ideas": self.generate_image_ideas_prompt,
-                "total_ideas": self.total_ideas,
-                "max_summary_size": self.max_summary_size,
+                "generate_image_prompts_prompt": self.generate_image_prompts_prompt,
+                "generate_global_summary_prompt": self.generate_global_summary_prompt,
+                "total_prompts_to_generate": self.total_prompts_to_generate,
+                "max_chunk_summary_size": self.max_chunk_summary_size,
+                "max_global_summary_size": self.max_global_summary_size,
                 "llm_model": self.llm,
             }
         }
@@ -81,6 +89,6 @@ class Agent:
         )
 
         return AgentOutput(
-            chunks_summaries=result["chunks_summaries"],
-            generated_ideas=result["generated_ideas"],
+            global_summary=result["global_summary"],
+            generated_prompts=result["image_prompts"],
         )
