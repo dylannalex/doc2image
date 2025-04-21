@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 class DocumentParser(ABC):
@@ -42,37 +41,19 @@ class PdfParser(DocumentParser):
         return self.separator.join([page.page_content for page in document])
 
 
-class Chunkenizer:
-    """
-    A class to chunk a document into smaller parts for processing.
-    """
+class TxtParser(DocumentParser):
+    def __init__(self, separator: str = "\n"):
+        self.separator = separator
 
-    def __init__(
-        self,
-        chunk_size: int,
-        chunk_overlap: int,
-        parser: DocumentParser,
-    ):
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
-        self.parser = parser
-
-    def split(self, document_path: str) -> list[str]:
+    def parse(self, document_path: str) -> str:
         """
-        Split the document into chunks.
+        Parse a text document (.txt and .md).
+
         Args:
-            document_path (str): Path to the document.
+            document_path (str): Path to the text document.
 
         Returns:
-            list[str]: List of document chunks.
+            str: Parsed text from the text document.
         """
-        # Parse the document using the provided parser
-        document = self.parser.parse(document_path)
-
-        # Split the document into chunks using RecursiveCharacterTextSplitter
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap,
-        )
-
-        return text_splitter.split_text(document)
+        with open(document_path, "r", encoding="utf-8") as file:
+            return self.separator.join(file.readlines())
