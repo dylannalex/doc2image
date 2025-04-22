@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
 from langgraph.graph import StateGraph, END
-from langchain_core.language_models import BaseLanguageModel
+from langchain.chat_models.base import BaseChatModel
+
 
 from doc2image.agent.components import (
     AgentState,
@@ -21,7 +22,7 @@ class AgentOutput:
 class Agent:
     def __init__(
         self,
-        llm: BaseLanguageModel,
+        llm: BaseChatModel,
         max_chunk_summary_size: int,
         max_global_summary_size: int,
         total_prompts_to_generate: int,

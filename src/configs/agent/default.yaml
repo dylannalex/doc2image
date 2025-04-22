@@ -1,5 +1,9 @@
 total_prompts_to_generate: 10
 max_chunk_summary_size: 200
 max_global_summary_size: 1000
-model: "llama3.1:8b"
-temperature: 0.7
+llm:
+  api: "ollama" # "ollama" or "openai"
+  model_name: "llama3.1:8b"
+  temperature: 0.7
+  top_p: 0.95
+  top_k: 50

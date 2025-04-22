@@ -1,10 +1,10 @@
 from time import time
 
 import hydra
-from langchain_ollama.chat_models import ChatOllama
 
 from doc2image.agent.core import Agent, AgentOutput
-from doc2image.docs import PdfParser, Chunkenizer
+from doc2image.docs import chunkenize_document
+from doc2image.llm import load_llm_model
 
 
 @hydra.main(config_path="configs", config_name="config", version_base=None)
@@ -19,21 +19,28 @@ def main(cfg) -> None:
         r"C:\Users\tinte\Root\Repositories\Other\doc2image\prompts_results.txt"
     )
 
+    llm = load_llm_model(
+        api_name=cfg.agent.llm.api,
+        model_name=cfg.agent.llm.model_name,
+        temperature=cfg.agent.llm.temperature,
+        top_p=cfg.agent.llm.top_p,
+        top_k=cfg.agent.llm.top_k,
+    )
+
     # Parse the document
     print("[Main] Starting document parsing...")
-    parser = PdfParser()
-    chunks = Chunkenizer(
-        chunk_size=cfg.parser.chunk_size,
-        chunk_overlap=cfg.parser.chunk_overlap,
-        parser=parser,
-    ).split(document_path)
+
+    chunks = chunkenize_document(
+        document_path, cfg.parser.chunk_size, cfg.parser.chunk_overlap
+    )
+
     print(f"[Main] Document parsed into {len(chunks)} chunks.")
 
     # Start the agent
     print("[Main] Starting agent execution...")
     start = time()
     agent = Agent(
-        llm=ChatOllama(model=cfg.agent.model, temperature=cfg.agent.temperature),
+        llm=llm,
         max_chunk_summary_size=cfg.agent.max_chunk_summary_size,
         max_global_summary_size=cfg.agent.max_global_summary_size,
         total_prompts_to_generate=cfg.agent.total_prompts_to_generate,
