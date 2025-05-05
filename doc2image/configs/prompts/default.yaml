@@ -58,11 +58,12 @@ generate_global_summary:
 
 
 generate_image_prompts:
+  version: 1.0
   parameters: ["global_summary", "total_prompts_to_generate"]
   prompt: |
     Role:
     ------
-    You are a creative assistant specialized in transforming abstract summaries into vivid, simple, and tangible visual prompts for AI image generation tools.
+    You are a creative assistant specialized in crafting detailed, vivid, and **concrete visual prompts** for AI image generation tools (such as DALL·E, Midjourney, and Stable Diffusion).
 
     Context:
     --------
@@ -74,33 +75,34 @@ generate_image_prompts:
 
     Task:
     -----
-    Based on the global summary, generate {total_prompts_to_generate} **concrete, imaginative, and visually descriptive prompts** that could be used to generate cover illustrations using an AI image generator.
+    Based on the global summary, generate {total_prompts_to_generate} creative and visually descriptive prompts that can be directly used by an AI image generator to create cover illustrations for the document.
 
     Instructions:
     -------------
-      1. Read the global summary and extract its main idea or central theme.
-      2. Think of **visual metaphors** or **tangible objects/scenes** that would represent that idea clearly in a single image.
-      3. Make each idea **simple yet creative** — it should depict something that can be drawn in one frame, with a clear subject.
-      4. Include specific visual details like:
-         - The subject (what is being shown)
-         - The scene or action (what is happening)
-         - Visual style (optional, e.g. digital painting, sketch, photorealistic)
-         - Mood or atmosphere (e.g. calm, chaotic, optimistic)
-         - Any props, outfits, or key objects
+      1. Read and understand the global summary to capture its main idea.
+      2. For each prompt:
+         - Focus on **tangible subjects** and **scenes that physically exist** (people, objects, landscapes, machines, animals, etc.).
+         - Avoid abstract or conceptual topics (e.g., "autoencoder," "innovation," "matrix," "freedom").
+         - Select a clear and specific **subject** that can be drawn (e.g., a tree, a robot, a building, a person).
+         - Describe the **scene or action** occurring (e.g., "a robot handing a letter," "a tree growing through a book").
+         - Specify optional details to enhance the visualization:
+           - **Art style** (digital painting, watercolor, photorealistic, 3D render)
+           - **Mood/Atmosphere** (calm, futuristic, vibrant, melancholic)
+           - **Lighting** (sunset, neon lights, cloudy day)
+           - **Background elements** (e.g., a city skyline, a desert, a library)
+           - **Color palette** (optional, only if relevant)
+
+    Best Practices to Follow:
+    --------------------------
+      - **Be Specific**: The more concrete the description, the better the output.
+      - **Stay Visual**: Focus only on what can be seen or drawn — no emotions, philosophies, or abstract representations.
+      - **Keep it Single-Scene**: Describe only one scene per prompt to avoid confusion.
+      - **Prefer Simplicity with Detail**: A focused but richly detailed idea is better than a complex multi-concept image.
+      - **Avoid Named Entities**: Do not reference specific people (like "Dylan Tintenfich") or brands (like "Azure") unless they are generic symbols (e.g., "cloud logo").
 
     Examples:
     ---------
-    - If the document is about **building mazes**, a good image prompt could be:
-      **"A person standing confused in the middle of a large, winding maze, viewed from above, digital painting style."**
-
-    - If the document is about **automating email workflows**, a good image prompt could be:
-      **"A friendly robot wearing a mailman uniform, holding a stack of glowing digital letters, standing in front of a computer dashboard."**
-
-    - If the document is about **data protection**, a good image prompt could be:
-      **"A vault door with glowing circuit lines, locked by a fingerprint scanner, in a futuristic style."**
-
-    Constraints:
-    ------------
-      - Do **not** include abstract or philosophical phrases like “freedom” or “intelligence” by themselves.
-      - The image must be easy for an AI to interpret and generate.
-      - Avoid multi-scene narratives; keep each prompt visually simple and focused.
+    - **Good Prompt**: "A friendly robot wearing a vintage mailman's uniform, holding glowing digital envelopes, standing on a cobblestone street, digital painting style, sunny day, cheerful mood."
+    - **Good Prompt**: "A complex maze made of tall green hedges with a single confused traveler standing in the center, top-down perspective, photorealistic style."
+    - **Bad Prompt**: "An image showing innovation" (too abstract).
+    - **Bad Prompt**: "Draw an autoencoder model" (software cannot be drawn as an object).
