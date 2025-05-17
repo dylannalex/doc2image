@@ -1,4 +1,4 @@
 defaults:
   - prompts: default
   - parser: default
-  - agent: default
+  - pipeline: default

@@ -1,0 +1,14 @@
+document_summarizer:
+  max_chunk_summary_size: 200
+  max_document_summary_size: 1000
+  llm_params:
+    temperature: 0.7
+    top_p: 0.95
+    top_k: 50
+
+image_prompts_generator:
+  total_prompts_to_generate: 10
+  llm_params:
+    temperature: 0.85
+    top_p: 0.9
+    top_k: 50

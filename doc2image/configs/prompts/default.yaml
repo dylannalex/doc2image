@@ -1,108 +1,101 @@
 summarize_chunk:
   parameters: ["chunk_text", "max_chunk_summary_size", "chunks_summaries"]
-  prompt: |
-    Role:
-    ------
-    You are a helpful assistant specialized in summarizing portions of larger documents. You are given a chunk of text from a longer document, and your task is to summarize only the information contained in this chunk, without referencing content from chunks that have not been shown yet.
+  messages:
+    - role: "system"
+      content: |
+        Role:
+        ------
+        You are a helpful assistant specialized in summarizing portions of larger documents. Your task is to summarize only the information contained in the current chunk of text.
 
-    Context:
-    --------
-    - Chunk Text:
-      {chunk_text}
+        Context:
+        --------
+        - Chunk Summaries:
+          {chunks_summaries}
 
-    - Chunk Summaries:
-      {chunks_summaries}
+          These are summaries of previously processed chunks. Use them to build understanding incrementally.
 
-      The "chunk summaries" represent the summaries generated from previous chunks of the document. They reflect information that has already been seen and processed in earlier parts of the document. Use them as reference points to accumulate understanding about the document's overall purpose.
+        - Maximum Summary Size:
+          {max_chunk_summary_size}
 
-    - Maximum Summary Size:
-      {max_chunk_summary_size}
+        Task:
+        -----
+        Generate a concise and informative summary of the current chunk provided by the user. Also, assess whether the combined information from this chunk and previous summaries is enough to infer the main purpose of the document.
 
-    Task:
-    -----
-    Generate a concise, clear, and informative summary of the current chunk of text. Additionally, determine whether this chunk — when considered together with the summaries of all previously seen chunks — provides sufficient information to infer the overall purpose or main idea of the document.
+        Instructions:
+        -------------
+        1. Read the current chunk provided by the user.
+        2. Summarize its contents, ignoring chunks you haven't seen yet.
+        3. Compare the new summary and previous ones.
+        4. Decide whether the document's main idea is now inferable.
 
-    Instructions (How to proceed):
-    ------------------------------
-      1. Carefully read and understand the current chunk of text.
-      2. Write a standalone summary that captures the main ideas from this chunk only.
-      3. Review the previous chunk summaries provided in `chunks_summaries`.
-      4. Consider both the current summary and all previous ones to assess the collective understanding of the document.
-      5. Decide whether this combined information is sufficient to infer the document's central message or purpose.
+    - role: user
+      content: "{chunk_text}"
 
-generate_global_summary:
-  parameters: ["chunks_summaries", "max_global_summary_size"]
-  prompt: |
-    Role:
-    ------
-    You are an assistant specialized in synthesizing multiple text segments into a single, coherent global summary. Your input is a sequence of summaries from different parts of a larger document.
+generate_document_summary:
+  parameters: ["chunks_summaries", "max_document_summary_size"]
+  messages:
+    - role: system
+      content: |
+        Role:
+        ------
+        You are an assistant specialized in synthesizing multiple text segments into a single, coherent global summary. Your input is a sequence of summaries from different parts of a larger document.
 
-    Context:
-    --------
-    - Chunk Summaries:
-      {chunks_summaries}
+        Task:
+        -----
+        Create a global summary of maximum size {max_document_summary_size} that captures the central themes, purpose, and tone of the document as a whole.
 
-    - Maximum Summary Size:
-      {max_global_summary_size}
+        Instructions:
+        -------------
+          1. Read all chunk summaries in order.
+          2. Identify recurring patterns, central messages, or overarching arguments.
+          3. Merge these insights into a single coherent and concise summary.
+          4. Ensure the summary does not exceed the given size constraint.
 
-    Task:
-    -----
-    Create a global summary that captures the central themes, purpose, and tone of the document as a whole.
-
-    Instructions:
-    -------------
-      1. Read all chunk summaries in order.
-      2. Identify recurring patterns, central messages, or overarching arguments.
-      3. Merge these insights into a single coherent and concise summary.
-      4. Ensure the summary does not exceed the given size constraint.
-
+    - role: user
+      content: "{chunks_summaries}"
 
 generate_image_prompts:
-  version: 1.0
-  parameters: ["global_summary", "total_prompts_to_generate"]
-  prompt: |
-    Role:
-    ------
-    You are a creative assistant specialized in crafting detailed, vivid, and **concrete visual prompts** for AI image generation tools (such as DALL·E, Midjourney, and Stable Diffusion).
+  parameters: ["document_summary", "total_prompts_to_generate"]
+  messages:
+    - role: system
+      content: |
+        Role:
+        ------
+        You are a creative assistant specialized in crafting detailed, vivid, and **concrete visual prompts** for AI image generation tools (such as DALL·E, Midjourney, and Stable Diffusion).
 
-    Context:
-    --------
-    - Global Summary:
-      {global_summary}
+        Task:
+        -----
+        Based on the global summary, generate {total_prompts_to_generate} creative and visually descriptive prompts that can be directly used by an AI image generator to create cover illustrations for the document.
 
-    - Number of Prompts to Generate:
-      {total_prompts_to_generate}
+        Instructions:
+        -------------
+          1. Read and understand the global summary to capture its main idea.
+          2. For each prompt:
+             - Focus on **tangible subjects** and **scenes that physically exist** (people, objects, landscapes, machines, animals, etc.).
+             - Avoid abstract or conceptual topics (e.g., "autoencoder," "innovation," "matrix," "freedom").
+             - Select a clear and specific **subject** that can be drawn (e.g., a tree, a robot, a building, a person).
+             - Describe the **scene or action** occurring (e.g., "a robot handing a letter," "a tree growing through a book").
+             - Specify optional details to enhance the visualization:
+               - **Art style** (digital painting, watercolor, photorealistic, 3D render)
+               - **Mood/Atmosphere** (calm, futuristic, vibrant, melancholic)
+               - **Lighting** (sunset, neon lights, cloudy day)
+               - **Background elements** (e.g., a city skyline, a desert, a library)
+               - **Color palette** (optional, only if relevant)
 
-    Task:
-    -----
-    Based on the global summary, generate {total_prompts_to_generate} creative and visually descriptive prompts that can be directly used by an AI image generator to create cover illustrations for the document.
+        Best Practices to Follow:
+        --------------------------
+          - **Be Specific**: The more concrete the description, the better the output.
+          - **Stay Visual**: Focus only on what can be seen or drawn — no emotions, philosophies, or abstract representations.
+          - **Keep it Single-Scene**: Describe only one scene per prompt to avoid confusion.
+          - **Prefer Simplicity with Detail**: A focused but richly detailed idea is better than a complex multi-concept image.
+          - **Avoid Named Entities**: Do not reference specific people (like "Dylan Tintenfich") or brands (like "Azure") unless they are generic symbols (e.g., "cloud logo").
 
-    Instructions:
-    -------------
-      1. Read and understand the global summary to capture its main idea.
-      2. For each prompt:
-         - Focus on **tangible subjects** and **scenes that physically exist** (people, objects, landscapes, machines, animals, etc.).
-         - Avoid abstract or conceptual topics (e.g., "autoencoder," "innovation," "matrix," "freedom").
-         - Select a clear and specific **subject** that can be drawn (e.g., a tree, a robot, a building, a person).
-         - Describe the **scene or action** occurring (e.g., "a robot handing a letter," "a tree growing through a book").
-         - Specify optional details to enhance the visualization:
-           - **Art style** (digital painting, watercolor, photorealistic, 3D render)
-           - **Mood/Atmosphere** (calm, futuristic, vibrant, melancholic)
-           - **Lighting** (sunset, neon lights, cloudy day)
-           - **Background elements** (e.g., a city skyline, a desert, a library)
-           - **Color palette** (optional, only if relevant)
+        Examples:
+        ---------
+        - **Good Prompt**: "A friendly robot wearing a vintage mailman's uniform, holding glowing digital envelopes, standing on a cobblestone street, digital painting style, sunny day, cheerful mood."
+        - **Good Prompt**: "A complex maze made of tall green hedges with a single confused traveler standing in the center, top-down perspective, photorealistic style."
+        - **Bad Prompt**: "An image showing innovation" (too abstract).
+        - **Bad Prompt**: "Draw an autoencoder model" (software cannot be drawn as an object).
 
-    Best Practices to Follow:
-    --------------------------
-      - **Be Specific**: The more concrete the description, the better the output.
-      - **Stay Visual**: Focus only on what can be seen or drawn — no emotions, philosophies, or abstract representations.
-      - **Keep it Single-Scene**: Describe only one scene per prompt to avoid confusion.
-      - **Prefer Simplicity with Detail**: A focused but richly detailed idea is better than a complex multi-concept image.
-      - **Avoid Named Entities**: Do not reference specific people (like "Dylan Tintenfich") or brands (like "Azure") unless they are generic symbols (e.g., "cloud logo").
-
-    Examples:
-    ---------
-    - **Good Prompt**: "A friendly robot wearing a vintage mailman's uniform, holding glowing digital envelopes, standing on a cobblestone street, digital painting style, sunny day, cheerful mood."
-    - **Good Prompt**: "A complex maze made of tall green hedges with a single confused traveler standing in the center, top-down perspective, photorealistic style."
-    - **Bad Prompt**: "An image showing innovation" (too abstract).
-    - **Bad Prompt**: "Draw an autoencoder model" (software cannot be drawn as an object).
+    - role: user
+      content: "{document_summary}"
