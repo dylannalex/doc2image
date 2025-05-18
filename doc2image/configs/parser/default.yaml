@@ -1,2 +1,6 @@
 chunk_size: 4000
-chunk_overlap: 0
+chunk_overlap: 100
+separators: ["\n\n", "\n", " ", ""]
+is_separator_regex: false
+keep_separator: true
+strip_whitespace: true

@@ -1,1 +1,1 @@
-from doc2image.docs.chunkenizer import chunkenize_document
+from .chunkenizer import chunkenize_document

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from langchain_community.document_loaders import PyPDFLoader
+from pypdf import PdfReader
 
 
 class DocumentParser(ABC):
@@ -23,12 +23,24 @@ class DocumentParser(ABC):
 
 
 class PdfParser(DocumentParser):
+    """
+    Parser for PDF documents using PyPDF.
+
+    This class is responsible for extracting text from PDF documents.
+    """
+
     def __init__(self, separator: str = "\n"):
+        """
+        Initialize the PDF parser.
+
+        Args:
+            separator (str): Separator to use when joining text from pages.
+        """
         self.separator = separator
 
     def parse(self, document_path: str) -> str:
         """
-        Parse a PDF document using PyPDFLoader.
+        Parse text from a PDF document.
 
         Args:
             document_path (str): Path to the PDF document.
@@ -36,13 +48,27 @@ class PdfParser(DocumentParser):
         Returns:
             str: Parsed text from the PDF document.
         """
-        loader = PyPDFLoader(document_path)
-        document = loader.load()
-        return self.separator.join([page.page_content for page in document])
+        reader = PdfReader(document_path)
+        pdf_text = ""
+        for page in reader.pages:
+            pdf_text += page.extract_text()
+            pdf_text += "\n"
+
+        return pdf_text
 
 
 class TxtParser(DocumentParser):
+    """
+    Parser for text documents (.txt and .md).
+    """ 
+
     def __init__(self, separator: str = "\n"):
+        """
+        Initialize the text parser.
+
+        Args:
+            separator (str): Separator to use when joining lines.
+        """
         self.separator = separator
 
     def parse(self, document_path: str) -> str:
