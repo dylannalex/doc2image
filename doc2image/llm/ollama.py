@@ -7,6 +7,11 @@ from .base import BaseLLM
 
 
 class OllamaLLM(BaseLLM):
+    """
+    Ollama LLM model class.
+
+    This class is responsible for interacting with the Ollama LLM API.
+    """
     def __init__(
         self,
         model_name: str,
@@ -14,6 +19,15 @@ class OllamaLLM(BaseLLM):
         top_p: float,
         top_k: int,
     ) -> None:
+        """
+        Initialize the Ollama LLM model.
+        
+        Args:
+            model_name (str): The name of the model to load.
+            temperature (float): The temperature setting for the model.
+            top_p (float): The top-p setting for the model.
+            top_k (int): The top-k setting for the model.
+        """
         super().__init__()
         self.model_name = model_name
         self.temperature = temperature
