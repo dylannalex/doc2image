@@ -23,3 +23,15 @@ class BaseLLM(ABC):
             str | BaseModel: The generated response in the expected format or as a string.
         """
         pass
+
+    @staticmethod
+    def pull_model(model_name: str) -> None:
+        """
+        Pull the model from the LLM provider.
+
+        This method is a placeholder and should be implemented by subclasses.
+
+        Args:
+            model_name (str): The name of the model to pull.
+        """
+        raise NotImplementedError("pull_model method is not implemented.")

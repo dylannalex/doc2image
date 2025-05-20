@@ -1,6 +1,6 @@
 from typing import Optional
 
-from ollama import chat
+from ollama import chat, pull
 from pydantic import BaseModel
 
 from .base import BaseLLM
@@ -12,27 +12,6 @@ class OllamaLLM(BaseLLM):
 
     This class is responsible for interacting with the Ollama LLM API.
     """
-    def __init__(
-        self,
-        model_name: str,
-        temperature: float,
-        top_p: float,
-        top_k: int,
-    ) -> None:
-        """
-        Initialize the Ollama LLM model.
-        
-        Args:
-            model_name (str): The name of the model to load.
-            temperature (float): The temperature setting for the model.
-            top_p (float): The top-p setting for the model.
-            top_k (int): The top-k setting for the model.
-        """
-        super().__init__()
-        self.model_name = model_name
-        self.temperature = temperature
-        self.top_p = top_p
-        self.top_k = top_k
 
     def generate(
         self,
@@ -67,3 +46,13 @@ class OllamaLLM(BaseLLM):
             output = output_format.model_validate_json(response.message.content)
 
         return output
+
+    @staticmethod
+    def pull_model(model_name: str) -> None:
+        """
+        Pull the model from the LLM provider.
+
+        Args:
+            model_name (str): The name of the model to pull.
+        """
+        pull(model_name)
