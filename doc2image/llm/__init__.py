@@ -42,6 +42,5 @@ def create_llm(
         temperature=temperature,
         top_p=top_p,
         top_k=top_k,
-        provider=provider,
         api_key=api_key,
     )
