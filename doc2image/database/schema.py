@@ -2,6 +2,7 @@ import os
 import typing
 from datetime import datetime
 
+from dotenv import load_dotenv
 import sqlalchemy as sa
 from sqlalchemy.orm import (
     declarative_base,
@@ -11,10 +12,10 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 
+load_dotenv()
 db = sa.create_engine(os.getenv("DATABASE_URL"), echo=False)
 Session = sessionmaker(bind=db)
 Base = declarative_base()
-Base.metadata.create_all(db.engine, checkfirst=True)
 
 
 class LlmProvider(Base):
@@ -110,6 +111,8 @@ class DocumentSummarySession(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     document_id: Mapped[int] = mapped_column(sa.ForeignKey("document.id"))
     document_summary: Mapped[str] = mapped_column(sa.String(10_000))
+    chunk_size: Mapped[int] = mapped_column()
+    chunk_overlap: Mapped[int] = mapped_column()
     max_chunk_summary_size: Mapped[int] = mapped_column()
     max_document_summary_size: Mapped[int] = mapped_column()
     llm_model_id: Mapped[int] = mapped_column(sa.ForeignKey("llm_model.id"))
@@ -212,3 +215,7 @@ class ImagePrompt(Base):
     image_prompts_session: Mapped["ImagePromptsSession"] = relationship(
         back_populates="prompts"
     )
+
+
+# Create tables in the database if they don't exist
+Base.metadata.create_all(db.engine, checkfirst=True)

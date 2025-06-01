@@ -6,4 +6,8 @@ from .schema import (
     ChunkSummary,
     ImagePromptsSession,
     ImagePrompt,
+    Base,
+    Session,
 )
+
+from .query import database_session_decorator
