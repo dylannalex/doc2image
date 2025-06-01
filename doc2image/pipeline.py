@@ -32,6 +32,17 @@ class DocumentSummarizer:
         summarize_chunk_prompt: Prompt,
         generate_document_summary_prompt: Prompt,
     ):
+        """
+        Initialize the DocumentSummarizer.
+
+        Args:
+            llm (BaseLLM): The LLM instance to use for summarization.
+            document_chunks (list[str]): List of document chunks to summarize.
+            max_document_summary_size (int): Maximum size of the document summary.
+            max_chunk_summary_size (int): Maximum size of each chunk summary.
+            summarize_chunk_prompt (Prompt): Prompt for summarizing each chunk.
+            generate_document_summary_prompt (Prompt): Prompt for generating the document summary.
+        """
         self.llm = llm
         self.document_chunks = document_chunks
         self.max_document_summary_size = max_document_summary_size
@@ -40,6 +51,12 @@ class DocumentSummarizer:
         self.generate_document_summary_prompt = generate_document_summary_prompt
 
     def run(self) -> tuple[str, list[str]]:
+        """
+        Summarize the document chunks and generate a global summary.
+
+        Returns:
+            tuple[str, list[str]]: A tuple containing the global document summary and a list of chunk summaries.
+        """
         # Summarize each chunk of the document until the summary is sufficient or
         # all chunks are processed
         chunk_summaries = []
@@ -81,12 +98,27 @@ class ImagePromptsGenerator:
         total_prompts_to_generate: int,
         generate_image_prompts_prompt: Prompt,
     ):
+        """
+        Initialize the ImagePromptsGenerator.
+
+        Args:
+            llm (BaseLLM): The LLM instance to use for generating image prompts.
+            document_summary (str): The summary of the document to base prompts on.
+            total_prompts_to_generate (int): Total number of prompts to generate.
+            generate_image_prompts_prompt (Prompt): Prompt for generating image prompts.
+        """
         self.llm = llm
         self.document_summary = document_summary
         self.total_prompts_to_generate = total_prompts_to_generate
         self.generate_image_prompts_prompt = generate_image_prompts_prompt
 
     def run(self) -> list[str]:
+        """
+        Generate image prompts based on the document summary.
+
+        Returns:
+            list[str]: A list of generated image prompts.
+        """
         messages = self.generate_image_prompts_prompt.format(
             {
                 "document_summary": self.document_summary,
