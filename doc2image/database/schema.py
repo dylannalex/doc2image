@@ -34,6 +34,7 @@ class LlmProvider(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(sa.String(100), unique=True)
     available: Mapped[bool] = mapped_column(sa.Boolean)
+    api_key: Mapped[str] = mapped_column(sa.String(100), nullable=True)
 
     llm_models: Mapped[typing.List["LlmModel"]] = relationship(
         back_populates="provider"
