@@ -1,24 +1,17 @@
 from typing import Optional
 
-from ollama import chat
+from ollama import chat, pull
 from pydantic import BaseModel
 
 from .base import BaseLLM
 
 
 class OllamaLLM(BaseLLM):
-    def __init__(
-        self,
-        model_name: str,
-        temperature: float,
-        top_p: float,
-        top_k: int,
-    ) -> None:
-        super().__init__()
-        self.model_name = model_name
-        self.temperature = temperature
-        self.top_p = top_p
-        self.top_k = top_k
+    """
+    Ollama LLM model class.
+
+    This class is responsible for interacting with the Ollama LLM API.
+    """
 
     def generate(
         self,
@@ -53,3 +46,20 @@ class OllamaLLM(BaseLLM):
             output = output_format.model_validate_json(response.message.content)
 
         return output
+
+    @staticmethod
+    def pull_model(model_name: str, api_key: str) -> None:
+        """
+        Pull the model from the LLM provider.
+
+        Args:
+            model_name (str): The name of the model to pull.
+            api_key (str): The API key for the model.
+
+        Raises:
+            ValueError: If the model could not be pulled from Ollama.
+        """
+        try:
+            pull(model_name)
+        except Exception:
+            raise ValueError(f"Model '{model_name}' could not be pulled from Ollama.")
