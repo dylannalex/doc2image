@@ -48,11 +48,18 @@ class OllamaLLM(BaseLLM):
         return output
 
     @staticmethod
-    def pull_model(model_name: str) -> None:
+    def pull_model(model_name: str, api_key: str) -> None:
         """
         Pull the model from the LLM provider.
 
         Args:
             model_name (str): The name of the model to pull.
+            api_key (str): The API key for the model.
+
+        Raises:
+            ValueError: If the model could not be pulled from Ollama.
         """
-        pull(model_name)
+        try:
+            pull(model_name)
+        except Exception:
+            raise ValueError(f"Model '{model_name}' could not be pulled from Ollama.")

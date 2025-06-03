@@ -53,7 +53,7 @@ class BaseLLM(ABC):
         pass
 
     @staticmethod
-    def pull_model(model_name: str) -> None:
+    def pull_model(model_name: str, api_key: str) -> None:
         """
         Pull the model from the LLM provider.
 
@@ -61,5 +61,6 @@ class BaseLLM(ABC):
 
         Args:
             model_name (str): The name of the model to pull.
+            api_key (str): The API key for the model.
         """
         raise NotImplementedError("pull_model method is not implemented.")
