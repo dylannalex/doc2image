@@ -11,13 +11,13 @@ def render_output(session, summary_session_id: int):
 
     # -- Summary Session Details --
     st.markdown("#### 📄 Session Details")
-    st.markdown(f"**Document:** {summary_session.document.name}")
     st.markdown(
-        f"**Date:** {summary_session.generation_date.strftime('%Y-%m-%d %H:%M')}"
+        f" - **Document:** {summary_session.document.name}\n"
+        f" - **Date:** {summary_session.generation_date.strftime('%Y-%m-%d %H:%M')}\n"
+        f" - **LLM Model:** {summary_session.llm_model.name}"
     )
-    st.markdown(f"**LLM Model:** {summary_session.llm_model.name}")
 
-    with st.expander("⚙️ Advanced Settings (View Only)"):
+    with st.expander("⚙️ Advanced Settings"):
         st.markdown("**Document Summary LLM Settings**")
         st.code(
             f"Temperature: {summary_session.llm_temperature}\n"
@@ -46,6 +46,7 @@ def render_output(session, summary_session_id: int):
             prompts.append(prompt.prompt)
     if prompts:
         df_prompts = pd.DataFrame({"Prompt": prompts})
+        df_prompts.index = range(1, len(df_prompts) + 1)
         st.dataframe(df_prompts, use_container_width=True)
         st.download_button(
             "Download Prompts as TXT",
