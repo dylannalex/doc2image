@@ -1,12 +1,14 @@
 from typing import Optional as _Optional
 
 from .base import BaseLLM
-from .ollama import OllamaLLM as OllamaLLM
+from .ollama import OllamaLLM
+from .openai import OpenAILLM
 
 
-PROVIDERS = ["ollama"]
+PROVIDERS = ["ollama", "openai"]
 PROVIDER_TO_LLM: dict[str, BaseLLM] = {
     "ollama": OllamaLLM,
+    "openai": OpenAILLM,
 }
 
 
