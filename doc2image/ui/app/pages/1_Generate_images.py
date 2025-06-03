@@ -24,35 +24,77 @@ st.title("📝 Convert Document to Image")
 
 @database_session_decorator
 def render_prompt_creation(session):
+    st.markdown("### Upload Document")
+    uploaded_file = st.file_uploader("Drop a document", type=["pdf", "txt", "docx"])
+
+    total_prompts = st.number_input(
+        "Total Prompts to Generate",
+        value=cfg.pipeline.image_prompts_generator.total_prompts_to_generate,
+        min_value=1,
+    )
+
+    st.markdown("### Generation Settings")
+
     col1, col2 = st.columns(2)
-
     with col1:
-        st.markdown("## Upload Document")
-        uploaded_file = st.file_uploader("Drop a document", type=["pdf", "txt", "docx"])
-
-        total_prompts = st.number_input(
-            "Total Prompts to Generate",
-            value=cfg.pipeline.image_prompts_generator.total_prompts_to_generate,
-            min_value=1,
+        # Provider selection (defaults to OpenAI)
+        provider_str = st.selectbox(
+            "Provider", options=["OpenAI", "Ollama"], index=0, key="provider_select"
         )
-
-    with col2:
-        st.markdown("## Model Settings")
+        provider = provider_str.lower()
+        st.session_state["provider"] = provider
         llm_models = [
             m.name
             for m in api.get_all_llm_models(session)
-            if m.provider.name == "ollama"
+            if m.provider.name == provider
         ]
 
-        if not llm_models:
-            st.warning("No LLM models available. Please load one.")
-        else:
-            model_selected = st.selectbox("Select LLM model", options=llm_models)
+        # API key input (only for openai)
+        api_key = api.get_provider_api_key(session, provider)
+        if provider == "openai":
+            api_key = st.text_input(
+                "OpenAI API Key",
+                type="password",
+                key="openai_api_key_input",
+                value=api_key,
+            )
+            if api_key:
+                st.session_state["openai_api_key"] = api_key
+                if st.button("Save API Key"):
+                    api.update_provider_api_key(session, provider, api_key)
+                    rerun_with_commit(session)
 
-        new_model = st.text_input("Add new Ollama model")
-        if st.button("Load model") and new_model:
-            api.add_llm_model(session, model_name=new_model, provider_name="ollama")
-            rerun_with_commit(session)
+        else:
+            st.session_state["openai_api_key"] = None
+    with col2:
+        # Filter models by provider
+        if llm_models:
+            model_selected = st.selectbox(
+                "Select LLM model", options=llm_models, key="model_select"
+            )
+            st.session_state["model_selected"] = model_selected
+
+        # Load new model (for both providers)
+        model_name = st.text_input(
+            f"Load New {provider_str} Model", key="model_name_input"
+        )
+        if st.button("Load Model"):
+            try:
+                api.add_llm_model(
+                    session,
+                    model_name=model_name,
+                    provider_name=provider,
+                    api_key=api_key,
+                )
+                rerun_with_commit(session)
+            except Exception as e:
+                error_msg = str(e)[0:1000]
+                st.toast(f"⚠️ {error_msg}")
+
+    if not llm_models:
+        st.warning(f"No {provider_str} models available. Please load one.")
+        model_selected = None
+        st.session_state["model_selected"] = None
 
     with st.expander("⚙️ Advanced Configuration"):
         st.markdown("**Parser**")
@@ -119,13 +161,16 @@ def render_prompt_creation(session):
         "prompt_top_k": prompt_top_k,
     }
 
-    if uploaded_file and st.button("🚀 Generate Images"):
-        file_path = os.path.join(tempfile.gettempdir(), uploaded_file.name)
-        with open(file_path, "wb") as f:
-            f.write(uploaded_file.read())
-        with st.spinner("Processing document and generating prompts..."):
-            run_pipeline(file_path, model_selected, total_prompts, config)
-        st.success("Pipeline completed! See results in History.")
+    if uploaded_file and st.session_state.get("model_selected"):
+        if st.button("🚀 Generate Images"):
+            file_path = os.path.join(tempfile.gettempdir(), uploaded_file.name)
+            with open(file_path, "wb") as f:
+                f.write(uploaded_file.read())
+            with st.spinner("Processing document and generating prompts..."):
+                run_pipeline(
+                    file_path, st.session_state["model_selected"], total_prompts, config
+                )
+            st.success("Pipeline completed! See results in History.")
 
 
 @database_session_decorator
@@ -136,6 +181,10 @@ def run_pipeline(
     total_prompts: int,
     config: dict,
 ):
+    provider = st.session_state.get("provider", "openai")
+    api_key = (
+        st.session_state.get("openai_api_key", None) if provider == "openai" else None
+    )
     summary_session = api.summerize_document(
         session,
         document_path=file_path,
@@ -145,12 +194,12 @@ def run_pipeline(
         is_separator_regex=cfg.parser.is_separator_regex,
         keep_separator=cfg.parser.keep_separator,
         strip_whitespace=cfg.parser.strip_whitespace,
-        llm_api_key="",
+        llm_api_key=api_key,
         llm_model_name=model_selected,
         llm_temperature=config["doc_temp"],
         llm_top_p=config["doc_top_p"],
         llm_top_k=config["doc_top_k"],
-        llm_provider="ollama",
+        llm_provider=provider,
         max_document_summary_size=config["max_document_summary_size"],
         max_chunk_summary_size=config["max_chunk_summary_size"],
         summarize_chunk_prompt_messages=cfg.prompts.summarize_chunk.messages,
@@ -167,12 +216,12 @@ def run_pipeline(
         total_prompts_to_generate=total_prompts,
         generate_image_prompts_prompt_messages=cfg.prompts.generate_image_prompts.messages,
         generate_image_prompts_prompt_parameters=cfg.prompts.generate_image_prompts.parameters,
-        llm_api_key="",
+        llm_api_key=api_key,
         llm_model_name=model_selected,
         llm_temperature=config["prompt_temp"],
         llm_top_p=config["prompt_top_p"],
         llm_top_k=config["prompt_top_k"],
-        provider_name="ollama",
+        provider_name=provider,
     )
     st.session_state.generated_summary_id = summary_session.id
     session.commit()
@@ -184,6 +233,7 @@ def show_results():
     if st.button("Back"):
         st.session_state.generated_summary_id = None
         st.rerun()
+
 
 if st.session_state.get("generated_summary_id", None) is None:
     render_prompt_creation()

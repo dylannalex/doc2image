@@ -36,8 +36,50 @@ def setup_llm_providers(session: Session) -> None:
         session.flush()
 
 
-setup_llm_providers()  # Always run this function to set up the LLM providers
+# Always run this function to set up the LLM providers
 # in case the database is empty.
+setup_llm_providers()
+
+
+def get_provider_api_key(session: Session, provider_name: str) -> str | None:
+    """
+    Get the API key for a specific LLM provider.
+
+    Args:
+        session (Session): The database session.
+        provider_name (str): The name of the LLM provider.
+
+    Returns:
+        str | None: The API key for the provider, or None if not found.
+    """
+    provider: LlmProvider = (
+        session.query(LlmProvider).filter_by(name=provider_name).first()
+    )
+    assert (
+        provider is not None
+    ), f"LLM provider '{provider_name}' not found in the database."
+
+    return provider.api_key
+
+
+def update_provider_api_key(session: Session, provider_name: str, api_key: str) -> None:
+    """
+    Update the API key for a specific LLM provider.
+
+    Args:
+        session (Session): The database session.
+        provider_name (str): The name of the LLM provider.
+        api_key (str): The new API key for the provider.
+    """
+    provider: LlmProvider = (
+        session.query(LlmProvider).filter_by(name=provider_name).first()
+    )
+    assert (
+        provider is not None
+    ), f"LLM provider '{provider_name}' not found in the database."
+
+    provider.api_key = api_key
+    session.flush()
 
 
 def get_available_providers(session: Session) -> List[str]:
@@ -67,6 +109,7 @@ def add_llm_model(
     session: Session,
     model_name: str,
     provider_name: str,
+    api_key: str,
     available: bool = True,
 ) -> LlmModel:
     """
@@ -76,6 +119,7 @@ def add_llm_model(
         model_name (str): The name of the LLM model.
         provider_name (str): The name of the LLM provider.
         available (bool): Availability status of the model.
+        api_key (str): The API key for the model.
 
     Returns:
         LlmModel: The created LLM model entry.
@@ -84,9 +128,17 @@ def add_llm_model(
     providers: List[LlmProvider] = (
         session.query(LlmProvider).filter_by(name=provider_name).all()
     )
+    assert (
+        len(providers) > 0
+    ), f"LLM provider '{provider_name}' not found in the database."
     assert len(providers) == 1, "Multiple LLM providers found with the same name."
     llm_provider: LlmProvider = providers[0]
     assert llm_provider.available, f"LLM provider '{provider_name}' is unavailable."
+
+    # Pull the model from the provider
+    # This will raise an error if the model does not exist
+    llm_cls: type[BaseLLM] = PROVIDER_TO_LLM[llm_provider.name]
+    llm_cls.pull_model(model_name=model_name, api_key=api_key)
 
     # Check if the model already exists in the database
     existing_models: List[LlmModel] = (
@@ -105,11 +157,9 @@ def add_llm_model(
     )
 
     session.add(llm_model)
-    session.flush()
 
-    # Pull the model from the provider
-    llm_cls: type[BaseLLM] = PROVIDER_TO_LLM[llm_provider.name]
-    llm_cls.pull_model(model_name=model_name)
+    # Flush the session to ensure the model is saved
+    session.flush()
 
     return llm_model
 
