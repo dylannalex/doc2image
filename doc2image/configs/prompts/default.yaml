@@ -88,7 +88,7 @@ generate_image_prompts:
           - **Stay Visual**: Focus only on what can be seen or drawn — no emotions, philosophies, or abstract representations.
           - **Keep it Single-Scene**: Describe only one scene per prompt to avoid confusion.
           - **Prefer Simplicity with Detail**: A focused but richly detailed idea is better than a complex multi-concept image.
-          - **Avoid Named Entities**: Do not reference specific people (like "Dylan Tintenfich") or brands (like "Azure") unless they are generic symbols (e.g., "cloud logo").
+          - **Avoid Named Entities**: Do not reference specific people (like "Elon Musk") or brands (like "Microsoft") unless they are generic symbols (e.g., "cloud logo").
 
         Examples:
         ---------
