@@ -6,6 +6,8 @@ st.set_page_config(page_title="Doc2Image", layout="wide", page_icon="🖼️")
 
 st.title("🖼️ Doc2Image")
 
+st.image("assets/robot-painting-a-landscape.png")
+
 st.markdown(
     """
 Turn your documents into creative prompts for AI image generators in seconds.
