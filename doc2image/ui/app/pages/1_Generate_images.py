@@ -82,12 +82,13 @@ def render_prompt_creation(session):
         model_name = st.text_input(f"Load New {provider} Model", key="model_name_input")
         if st.button("Load Model"):
             try:
-                api.add_llm_model(
-                    session,
-                    model_name=model_name,
-                    provider_name=provider,
-                    api_key=api_key,
-                )
+                with st.spinner(f"Loading '{model_name}' model..."):
+                    api.add_llm_model(
+                        session,
+                        model_name=model_name,
+                        provider_name=provider,
+                        api_key=api_key,
+                    )
                 rerun_with_commit(session)
             except Exception as e:
                 error_msg = str(e)[0:1000]
