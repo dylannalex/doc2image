@@ -1,9 +1,19 @@
+import os
 from typing import Optional
 
-from ollama import chat, pull
+from ollama import Client
 from pydantic import BaseModel
 
 from .base import BaseLLM
+
+_client = Client(host=os.environ.get("OLLAMA_BASE_URL", None))
+
+try:
+    _client.ps()
+    OLLAMA_AVAILABLE = True
+except Exception:
+    OLLAMA_AVAILABLE = False
+    _client = None
 
 
 class OllamaLLM(BaseLLM):
@@ -28,7 +38,7 @@ class OllamaLLM(BaseLLM):
         Returns:
             str | BaseModel: The generated response in the expected format or as a string.
         """
-        response = chat(
+        response = _client.chat(
             model=self.model_name,
             messages=messages,
             format=output_format.model_json_schema() if output_format else None,

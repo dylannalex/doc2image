@@ -39,10 +39,13 @@ def render_prompt_creation(session):
     col1, col2 = st.columns(2)
     with col1:
         # Provider selection (defaults to OpenAI)
-        provider_str = st.selectbox(
-            "Provider", options=["OpenAI", "Ollama"], index=0, key="provider_select"
+        available_providers = api.get_llm_providers()
+        provider = st.selectbox(
+            "Provider",
+            options=available_providers,
+            index=0,
+            key="provider_select",
         )
-        provider = provider_str.lower()
         st.session_state["provider"] = provider
         llm_models = [
             m.name
@@ -50,9 +53,9 @@ def render_prompt_creation(session):
             if m.provider.name == provider
         ]
 
-        # API key input (only for openai)
+        # API key input (only for OpenAI)
         api_key = api.get_provider_api_key(session, provider)
-        if provider == "openai":
+        if provider == "OpenAI":
             api_key = st.text_input(
                 "OpenAI API Key",
                 type="password",
@@ -76,9 +79,7 @@ def render_prompt_creation(session):
             st.session_state["model_selected"] = model_selected
 
         # Load new model (for both providers)
-        model_name = st.text_input(
-            f"Load New {provider_str} Model", key="model_name_input"
-        )
+        model_name = st.text_input(f"Load New {provider} Model", key="model_name_input")
         if st.button("Load Model"):
             try:
                 api.add_llm_model(
@@ -93,7 +94,7 @@ def render_prompt_creation(session):
                 st.toast(f"⚠️ {error_msg}")
 
     if not llm_models:
-        st.warning(f"No {provider_str} models available. Please load one.")
+        st.warning(f"No {provider} models available. Please load one.")
         model_selected = None
         st.session_state["model_selected"] = None
 
@@ -182,9 +183,9 @@ def run_pipeline(
     total_prompts: int,
     config: dict,
 ):
-    provider = st.session_state.get("provider", "openai")
+    provider = st.session_state.get("provider", "OpenAI")
     api_key = (
-        st.session_state.get("openai_api_key", None) if provider == "openai" else None
+        st.session_state.get("openai_api_key", None) if provider == "OpenAI" else None
     )
     summary_session = api.summerize_document(
         session,

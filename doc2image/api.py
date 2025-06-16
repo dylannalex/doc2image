@@ -3,7 +3,7 @@ from time import time
 from datetime import datetime
 from typing import List
 
-from .docs import chunkenize_document
+from .docs import chunkenize_document, AVAILABLE_FORMATS
 from .prompt import Prompt
 from .database import (
     LlmModel,
@@ -39,6 +39,16 @@ def setup_llm_providers(session: Session) -> None:
 # Always run this function to set up the LLM providers
 # in case the database is empty.
 setup_llm_providers()
+
+
+def get_llm_providers() -> list[str]:
+    """
+    Get a list of available LLM providers.
+
+    Returns:
+        list[str]: A list of available LLM provider names.
+    """
+    return PROVIDERS
 
 
 def get_available_doc_formats() -> list[str]:

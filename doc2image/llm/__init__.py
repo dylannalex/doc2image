@@ -1,15 +1,16 @@
 from typing import Optional as _Optional
 
 from .base import BaseLLM
-from .ollama import OllamaLLM
 from .openai import OpenAILLM
+from .ollama import OllamaLLM, OLLAMA_AVAILABLE
 
 
-PROVIDERS = ["ollama", "openai"]
-PROVIDER_TO_LLM: dict[str, BaseLLM] = {
-    "ollama": OllamaLLM,
-    "openai": OpenAILLM,
-}
+PROVIDERS = ["OpenAI"]
+PROVIDER_TO_LLM: dict[str, BaseLLM] = {"OpenAI": OpenAILLM}
+
+if OLLAMA_AVAILABLE:
+    PROVIDERS.append("Ollama")
+    PROVIDER_TO_LLM["Ollama"] = OllamaLLM
 
 
 def create_llm(
@@ -34,12 +35,12 @@ def create_llm(
     Returns:
         BaseLLM: The loaded LLM chat model.
     """
-    if provider.lower() not in PROVIDERS:
+    if provider not in PROVIDERS:
         raise ValueError(
             f"'{provider}' API is unsupported. Supported APIs are: {', '.join(PROVIDERS)}."
         )
 
-    return PROVIDER_TO_LLM[provider.lower()](
+    return PROVIDER_TO_LLM[provider](
         model_name=model_name,
         temperature=temperature,
         top_p=top_p,
