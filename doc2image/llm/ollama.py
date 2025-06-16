@@ -60,6 +60,9 @@ class OllamaLLM(BaseLLM):
             ValueError: If the model could not be pulled from Ollama.
         """
         try:
-            pull(model_name)
+            _client.pull(model_name)
         except Exception:
-            raise ValueError(f"Model '{model_name}' could not be pulled from Ollama.")
+            raise ValueError(
+                f"Failed to load the model '{model_name}'. "
+                "Visit https://ollama.com/library to see supported models."
+            )

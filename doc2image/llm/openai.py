@@ -1,6 +1,6 @@
 from typing import Optional
 
-from openai import OpenAI
+from openai import OpenAI, AuthenticationError
 from pydantic import BaseModel
 
 from .base import BaseLLM
@@ -58,7 +58,11 @@ class OpenAILLM(BaseLLM):
             model_name (str): The name of the model to pull.
             api_key (str): The API key for the model.
         """
-        client = OpenAI(api_key=api_key)
-        models = [m.id for m in client.models.list().data]
+        try:
+            client = OpenAI(api_key=api_key)
+            models = [m.id for m in client.models.list().data]
+        except AuthenticationError:
+            raise ValueError("Invalid OpenAI API key provided.")
+
         if model_name not in models:
             raise ValueError(f"Model '{model_name}' not found in OpenAI models.")
