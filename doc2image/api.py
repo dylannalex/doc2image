@@ -41,6 +41,16 @@ def setup_llm_providers(session: Session) -> None:
 setup_llm_providers()
 
 
+def get_available_doc_formats() -> list[str]:
+    """
+    Get a list of available document formats for upload.
+
+    Returns:
+        list[str]: A list of supported document formats.
+    """
+    return AVAILABLE_FORMATS
+
+
 def get_provider_api_key(session: Session, provider_name: str) -> str | None:
     """
     Get the API key for a specific LLM provider.

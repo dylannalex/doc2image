@@ -25,7 +25,8 @@ st.title("📝 Convert Document to Image")
 @database_session_decorator
 def render_prompt_creation(session):
     st.markdown("### Upload Document")
-    uploaded_file = st.file_uploader("Drop a document", type=["pdf", "txt", "docx"])
+    available_doc_formats = api.get_available_doc_formats()
+    uploaded_file = st.file_uploader("Drop a document", type=available_doc_formats)
 
     total_prompts = st.number_input(
         "Total Prompts to Generate",
