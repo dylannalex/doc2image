@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from pypdf import PdfReader
+from docx import Document as DocxDocument
 
 
 class DocumentParser(ABC):
@@ -57,10 +58,39 @@ class PdfParser(DocumentParser):
         return pdf_text
 
 
+class DocxParser:
+    """
+    Parser for Word documents (.docx).
+
+    This class is responsible for extracting text from Word documents using python-docx.
+    """
+
+    def __init__(self, separator: str = "\n"):
+        """
+        Initialize the Word document parser.
+        Args:
+            separator (str): Separator to use when joining paragraphs.
+        """
+        self.separator = separator
+
+    def parse(self, document_path: str) -> str:
+        """
+        Parse a Word document (.docx).
+
+        Args:
+            document_path (str): Path to the Word document.
+
+        Returns:
+            str: Parsed text from the Word document.
+        """
+        doc = DocxDocument(document_path)
+        return self.separator.join(paragraph.text for paragraph in doc.paragraphs)
+
+
 class TxtParser(DocumentParser):
     """
-    Parser for text documents (.txt and .md).
-    """ 
+    Parser for text documents (.txt, .md, etc.).
+    """
 
     def __init__(self, separator: str = "\n"):
         """
@@ -73,7 +103,7 @@ class TxtParser(DocumentParser):
 
     def parse(self, document_path: str) -> str:
         """
-        Parse a text document (.txt and .md).
+        Parse a text document (.txt, .md, etc.).
 
         Args:
             document_path (str): Path to the text document.

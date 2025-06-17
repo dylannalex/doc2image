@@ -1,6 +1,6 @@
 from typing import Union, Literal
 
-from .parser import DocumentParser, PdfParser, TxtParser
+from .parser import DocumentParser, PdfParser, TxtParser, DocxParser
 from .text_splitter import TextSplitter
 
 
@@ -36,8 +36,13 @@ def chunkenize_document(
     # Load the appropriate parser based on the file extension
     parsers = {
         "pdf": PdfParser,
+        "docx": DocxParser,
         "txt": TxtParser,
         "md": TxtParser,
+        "py": TxtParser,
+        "json": TxtParser,
+        "yaml": TxtParser,
+        "yml": TxtParser,
     }
 
     if extension not in parsers:
