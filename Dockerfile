@@ -23,13 +23,18 @@ WORKDIR /app
 
 COPY assets assets
 COPY doc2image doc2image
-COPY .env .env
 COPY --from=builder /app/.venv .venv
 
 ENV PATH="/app/.venv/bin:$PATH"
+ENV DATABASE_URL="sqlite:///data/doc2image.db"
 
 EXPOSE 8000
 
 VOLUME ["/app/data"]
 
 CMD ["python", "-m", "streamlit", "run", "doc2image/ui/app/Home.py", "--server.port=8000"]
+
+# ------------------------------- Metadata ------------------------------- #
+LABEL version="1.0"
+LABEL description="Turn your documents into stunning AI-generated images."
+LABEL maintainer="Dylan Tintenfich"
