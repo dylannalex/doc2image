@@ -37,17 +37,17 @@ You can run doc2image in two ways depending on your needs:
 2. Pull the latest image from Docker Hub:
 
 ```bash
-docker pull dylantinten/doc2image:latest
+docker pull dylantinten/doc2image:v1.0
 ```
 
 3. Run the application:
 
 ```bash
-docker run --name doc2image -p 8000:8000 -v data:/app/data doc2image
+docker run --name doc2image -p 8000:8000 -v data:/app/data dylantinten/doc2image:v1.0
 ```
-> 💡 This command will create a `data` folder in your current directory to store output files. Do not remove it.
+> 💡 This command will create a `data` folder in your current working directory to store output files (do not delete this folder). You can change `data` to any path you prefer, or `cd` into the directory where you want your data to live before running the command.
 
-4. Open your browser and visit: [http://localhost:8000](http://localhost:8000). You're ready to go!
+1. Open your browser and visit: [http://localhost:8000](http://localhost:8000). You're ready to go!
 
 To stop the application:
 
@@ -69,7 +69,9 @@ This setup runs both the doc2image app and an Ollama server locally using Docker
 
 2. Open your terminal or command line and navigate where `docker-compose.yaml` is located.
 
-3. Build and launch the services:
+> 💡 This command will create a `data` folder in your current working directory to store output files (do not delete this folder).
+
+1. Build and launch the services:
 
 ```bash
 docker compose up --build
