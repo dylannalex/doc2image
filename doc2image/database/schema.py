@@ -2,7 +2,6 @@ import os
 import typing
 from datetime import datetime
 
-from dotenv import load_dotenv
 import sqlalchemy as sa
 from sqlalchemy.orm import (
     declarative_base,
@@ -12,7 +11,6 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 
-load_dotenv()
 db = sa.create_engine(os.getenv("DATABASE_URL"), echo=False)
 Session = sessionmaker(bind=db)
 Base = declarative_base()
