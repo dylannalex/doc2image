@@ -1,0 +1,23 @@
+services:
+  doc2image:
+    image: dylantinten/doc2image:v1.0
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./data/ollama_models:/root/.ollama
+    privileged: true  # Required for CPU-based Ollama runtime
+    command: serve 
+
+volumes:
+  ollama_models:
