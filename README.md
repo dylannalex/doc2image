@@ -6,6 +6,10 @@
 
 Doc2Image is an AI-powered app that transforms your documents into creative image ideas. Just upload a file (PDF, TXT, DOCX, Markdown and more) and Doc2Image will read the content, highlight the key points, and create visual descriptions ready to use with your favorite image generation platforms like MidJourney, DALL·E, ChatGPT, and more.
 
+## 💻 Demo
+
+https://github.com/user-attachments/assets/ed499dfd-7326-4788-a419-fdb4852e55a9
+
 ## ✨ Features
 
 - **Beautiful, intuitive interface** — no technical skills required
