@@ -1,13 +1,11 @@
 import os
 import tempfile
 
-import streamlit as st
 import hydra
 from hydra.core.global_hydra import GlobalHydra
+import streamlit as st
 
-from doc2image.database import database_session_decorator
 from doc2image.ui.rendering import render_output
-from doc2image.ui.utils import rerun_with_commit
 from doc2image import api
 
 
@@ -22,8 +20,7 @@ st.set_page_config(page_title="Doc2Image", layout="wide", page_icon="🖼️")
 st.title("📝 Convert Document to Image")
 
 
-@database_session_decorator
-def render_prompt_creation(session):
+def render_prompt_creation():
     st.markdown("### Upload Document")
     available_doc_formats = api.get_available_doc_formats()
     uploaded_file = st.file_uploader("Drop a document", type=available_doc_formats)
@@ -38,76 +35,61 @@ def render_prompt_creation(session):
 
     col1, col2 = st.columns(2)
     with col1:
-        # Provider selection (defaults to OpenAI)
+        # Provider selection
         available_providers = api.get_llm_providers()
-        provider = st.selectbox(
-            "Provider",
-            options=available_providers,
-            index=0,
-            key="provider_select",
-        )
+        provider = st.selectbox("Provider", options=available_providers, index=0)
         st.session_state["provider"] = provider
-        llm_models = [
-            m.name
-            for m in api.get_all_llm_models(session)
-            if m.provider.name == provider
-        ]
 
-        # API key input (only for OpenAI)
-        api_key = api.get_provider_api_key(session, provider)
+        # API key input
+        api_key = api.get_provider_api_key(provider)
         if provider == "OpenAI":
-            api_key = st.text_input(
-                "OpenAI API Key",
-                type="password",
-                key="openai_api_key_input",
-                value=api_key,
+            api_key_input = st.text_input(
+                "OpenAI API Key", type="password", value=api_key or ""
             )
-            if api_key:
+            if api_key_input and api_key_input != api_key:
+                api.update_provider_api_key(provider, api_key_input)
+                st.session_state["openai_api_key"] = api_key_input
+                st.rerun()
+            else:
                 st.session_state["openai_api_key"] = api_key
-                if st.button("Save API Key"):
-                    api.update_provider_api_key(session, provider, api_key)
-                    rerun_with_commit(session)
-
         else:
             st.session_state["openai_api_key"] = None
+
     with col2:
         # Filter models by provider
+        llm_models = [
+            m.model_name
+            for m in api.get_all_llm_models()
+            if m.provider_name == provider
+        ]
         if llm_models:
-            model_selected = st.selectbox(
-                "Select LLM model", options=llm_models, key="model_select"
-            )
+            model_selected = st.selectbox("Select LLM model", options=llm_models)
             st.session_state["model_selected"] = model_selected
+        else:
+            st.warning(f"No {provider} models available. Please load one.")
+            st.session_state["model_selected"] = None
 
-        # Load new model (for both providers)
-        model_name = st.text_input(f"Load New {provider} Model", key="model_name_input")
+        # Load new model
+        model_name = st.text_input(f"Load New {provider} Model")
         if st.button("Load Model"):
             try:
                 with st.spinner(f"Loading '{model_name}' model..."):
                     api.add_llm_model(
-                        session,
                         model_name=model_name,
                         provider_name=provider,
-                        api_key=api_key,
+                        api_key=st.session_state.get("openai_api_key"),
                     )
-                rerun_with_commit(session)
+                st.rerun()
             except Exception as e:
-                error_msg = str(e)[0:1000]
-                st.toast(f"⚠️ {error_msg}")
-
-    if not llm_models:
-        st.warning(f"No {provider} models available. Please load one.")
-        model_selected = None
-        st.session_state["model_selected"] = None
+                st.toast(f"⚠️ {str(e)[:1000]}")
 
     with st.expander("⚙️ Advanced Configuration"):
+        # Parser settings
         st.markdown("**Parser**")
-        chunk_size = st.number_input(
-            "chunk_size", value=cfg.parser.chunk_size, key="chunk_size"
-        )
-        chunk_overlap = st.number_input(
-            "chunk_overlap", value=cfg.parser.chunk_overlap, key="chunk_overlap"
-        )
+        chunk_size = st.number_input("chunk_size", value=cfg.parser.chunk_size)
+        chunk_overlap = st.number_input("chunk_overlap", value=cfg.parser.chunk_overlap)
 
+        # Document Summarizer settings
         st.markdown("**Document Summarizer**")
         max_chunk_summary_size = st.number_input(
             "max_chunk_summary_size",
@@ -132,6 +114,7 @@ def render_prompt_creation(session):
             value=cfg.pipeline.document_summarizer.llm_params.top_k,
         )
 
+        # Image Prompts Generator settings
         st.markdown("**Image Prompts Generator**")
         prompt_temp = st.slider(
             "prompt_temperature",
@@ -151,94 +134,66 @@ def render_prompt_creation(session):
             value=cfg.pipeline.image_prompts_generator.llm_params.top_k,
         )
 
-    config = {
-        "chunk_size": chunk_size,
-        "chunk_overlap": chunk_overlap,
-        "max_chunk_summary_size": max_chunk_summary_size,
-        "max_document_summary_size": max_document_summary_size,
-        "doc_temp": doc_temp,
-        "doc_top_p": doc_top_p,
-        "doc_top_k": doc_top_k,
-        "prompt_temp": prompt_temp,
-        "prompt_top_p": prompt_top_p,
-        "prompt_top_k": prompt_top_k,
-    }
-
     if uploaded_file and st.session_state.get("model_selected"):
         if st.button("🚀 Generate Images"):
             file_path = os.path.join(tempfile.gettempdir(), uploaded_file.name)
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.read())
+
             with st.spinner("Processing document and generating prompts..."):
-                run_pipeline(
-                    file_path, st.session_state["model_selected"], total_prompts, config
-                )
-            st.success("Pipeline completed! See results in History.")
+                # Prepare arguments for the API
+                summarizer_args = {
+                    "document_path": file_path,
+                    "chunk_size": chunk_size,
+                    "chunk_overlap": chunk_overlap,
+                    "separators": cfg.parser.separators,
+                    "is_separator_regex": cfg.parser.is_separator_regex,
+                    "keep_separator": cfg.parser.keep_separator,
+                    "strip_whitespace": cfg.parser.strip_whitespace,
+                    "llm_api_key": st.session_state.get("openai_api_key"),
+                    "llm_model_name": st.session_state["model_selected"],
+                    "llm_temperature": doc_temp,
+                    "llm_top_p": doc_top_p,
+                    "llm_top_k": doc_top_k,
+                    "llm_provider": provider,
+                    "max_document_summary_size": max_document_summary_size,
+                    "max_chunk_summary_size": max_chunk_summary_size,
+                    "summarize_chunk_prompt_messages": cfg.prompts.summarize_chunk.messages,
+                    "summarize_chunk_prompt_parameters": cfg.prompts.summarize_chunk.parameters,
+                    "generate_document_summary_prompt_messages": cfg.prompts.generate_document_summary.messages,
+                    "generate_document_summary_prompt_parameters": cfg.prompts.generate_document_summary.parameters,
+                }
+                summary_session_dto = api.summerize_document(**summarizer_args)
 
+                prompts_generator_args = {
+                    "summary_session_id": summary_session_dto.id,
+                    "document_summary": summary_session_dto.document_summary,
+                    "total_prompts_to_generate": total_prompts,
+                    "generate_image_prompts_prompt_messages": cfg.prompts.generate_image_prompts.messages,
+                    "generate_image_prompts_prompt_parameters": cfg.prompts.generate_image_prompts.parameters,
+                    "llm_api_key": st.session_state.get("openai_api_key"),
+                    "llm_model_name": st.session_state["model_selected"],
+                    "llm_temperature": prompt_temp,
+                    "llm_top_p": prompt_top_p,
+                    "llm_top_k": prompt_top_k,
+                    "provider_name": provider,
+                }
+                api.generate_image_prompts(**prompts_generator_args)
 
-@database_session_decorator
-def run_pipeline(
-    session,
-    file_path: str,
-    model_selected: str,
-    total_prompts: int,
-    config: dict,
-):
-    provider = st.session_state.get("provider", "OpenAI")
-    api_key = (
-        st.session_state.get("openai_api_key", None) if provider == "OpenAI" else None
-    )
-    summary_session = api.summerize_document(
-        session,
-        document_path=file_path,
-        chunk_size=config["chunk_size"],
-        chunk_overlap=config["chunk_overlap"],
-        separators=cfg.parser.separators,
-        is_separator_regex=cfg.parser.is_separator_regex,
-        keep_separator=cfg.parser.keep_separator,
-        strip_whitespace=cfg.parser.strip_whitespace,
-        llm_api_key=api_key,
-        llm_model_name=model_selected,
-        llm_temperature=config["doc_temp"],
-        llm_top_p=config["doc_top_p"],
-        llm_top_k=config["doc_top_k"],
-        llm_provider=provider,
-        max_document_summary_size=config["max_document_summary_size"],
-        max_chunk_summary_size=config["max_chunk_summary_size"],
-        summarize_chunk_prompt_messages=cfg.prompts.summarize_chunk.messages,
-        summarize_chunk_prompt_parameters=cfg.prompts.summarize_chunk.parameters,
-        generate_document_summary_prompt_messages=cfg.prompts.generate_document_summary.messages,
-        generate_document_summary_prompt_parameters=cfg.prompts.generate_document_summary.parameters,
-    )
+                st.session_state.generated_summary_id = summary_session_dto.id
 
-    api.generate_image_prompts(
-        session,
-        summary_session=summary_session,
-        document_path=file_path,
-        document_summary=summary_session.document_summary,
-        total_prompts_to_generate=total_prompts,
-        generate_image_prompts_prompt_messages=cfg.prompts.generate_image_prompts.messages,
-        generate_image_prompts_prompt_parameters=cfg.prompts.generate_image_prompts.parameters,
-        llm_api_key=api_key,
-        llm_model_name=model_selected,
-        llm_temperature=config["prompt_temp"],
-        llm_top_p=config["prompt_top_p"],
-        llm_top_k=config["prompt_top_k"],
-        provider_name=provider,
-    )
-    st.session_state.generated_summary_id = summary_session.id
-    session.commit()
-    st.rerun()
+            st.success("Pipeline completed! See results below or in History.")
+            st.rerun()
 
 
 def show_results():
     render_output(st.session_state.generated_summary_id)
-    if st.button("Back"):
+    if st.button("Generate New"):
         st.session_state.generated_summary_id = None
         st.rerun()
 
 
-if st.session_state.get("generated_summary_id", None) is None:
+if st.session_state.get("generated_summary_id") is None:
     render_prompt_creation()
 else:
     show_results()

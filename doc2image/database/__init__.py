@@ -1,4 +1,4 @@
-from .schema import (
+from .models import (
     LlmModel,
     LlmProvider,
     Document,

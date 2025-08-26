@@ -1,4 +1,4 @@
-from .schema import Base, Session
+from .models import Base, Session
 
 
 def database_session_decorator(func):
