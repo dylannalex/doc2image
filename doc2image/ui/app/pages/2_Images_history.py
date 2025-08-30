@@ -8,10 +8,10 @@ from doc2image.ui.rendering import render_output
 from doc2image import api
 
 # --- Streamlit Page Rendering ---
-st.set_page_config(page_title="Doc2Image", layout="wide", page_icon="🖼️")
+st.set_page_config(page_title="Idea Gallery", layout="wide", page_icon="🖼️")
 
-st.title("📚 History")
-
+st.title("🖼️ Your Idea Gallery")
+st.markdown("Step back into your gallery of past creations, where every document tells a visual story.")
 
 def render_history():
     all_summary_sessions = api.get_all_document_summary_sessions()

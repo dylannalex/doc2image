@@ -1,29 +1,69 @@
 import streamlit as st
 
-st.set_page_config(page_title="Doc2Image", layout="wide", page_icon="🖼️")
+st.set_page_config(page_title="Doc2Image", layout="wide", page_icon="🎨")
 
-st.title("🖼️ Doc2Image")
+st.title(
+    "🖼️ Welcome to Doc2Image",
+)
 
-st.image("assets/robot-painting-a-landscape.png")
+col1, col2 = st.columns(2, gap="large")
+with col1:
+    st.subheader("Transform Your Documents into Stunning Visual Ideas")
+    st.markdown(
+        """
+        **Doc2Image is here to help you unlock your creativity!** Upload any document (`PDF`, `DOCX`, `TXT` and more), and let the AI generate a list of unique image ideas, ready for you to use. Perfect for blog posts, presentations, or simply sparking your imagination!
+        """
+    )
 
+    st.info(
+        "**Heads-Up:** This app creates image ideas, not the final images. You can then use these ideas in any AI image generator you like!",
+        icon="💡",
+    )
+
+    st.subheader("✨ Key Features")
+    st.markdown(
+        """
+        - **Intuitive Interface:** A clean, guided experience from start to finish.
+        - **Flexible AI:** Works with both OpenAI models and local models via Ollama.
+        - **Idea History:** Never lose a great idea with the built-in idea gallery.
+        - **Customizable:** Fine-tune the AI's creativity to get the perfect results.
+        """
+    )
+    st.subheader("🚀 How to Get Started")
+
+    st.page_link(
+        "pages/3_⚙️_Settings.py",
+        label="**1\. Configure Your Models (One-Time Setup)**",
+        # icon="⚙️",
+    )
+    st.markdown("Add your API keys and choose which AI models you want to use.")
+
+    st.page_link(
+        "pages/2_Images_history.py",
+        label="**2\. Generate Image Ideas**",
+        # icon="🚀",
+    )
+
+    st.markdown("Upload a document and let the magic happen!")
+
+    st.page_link(
+        "pages/2_Images_history.py",
+        label="**3\. Visit Your Idea Gallery**",
+        # icon="🖼️",
+    )
+    st.markdown("Browse your creations and use them in your favorite image generator.")
+
+with col2:
+    st.markdown("<div style='height: 100px;'></div>", unsafe_allow_html=True)
+    st.image("assets/robot-painting-a-landscape.png", use_container_width=True)
+
+# --- Footer ---
 st.markdown(
     """
-Doc2Image is an AI-powered app that transforms your documents into creative image ideas. Just upload a file (PDF, TXT, DOCX, Markdown and more) and Doc2Image will read the content, highlight the key points, and create visual descriptions ready to use with your favorite image generation platforms like MidJourney, DALL·E, ChatGPT, and more.
-
-### 📚 How It Works
-
-1. **Upload a document** — PDF, DOCX, Markdown, TXT, and more are supported.
-2. **Choose a model** — OpenAI or a local Ollama model  
-3. **Customize your request** — Select how many image prompts you want, and (optionally) tweak advanced settings like temperature or chunk size  
-4. **Generate amazing image ideas** — Doc2Image transforms your document into stunning, ready-to-use prompts
-
-### 🚀 Get started
-
-Go to the **Generate Images** page to upload your document and start creating amazing images.
-
-### ❤️ Support the project
-
-If you enjoy using this project, please consider [giving it a star ⭐️ on GitHub](https://github.com/dylannalex/doc2image) — it helps others discover it too!
-
-"""
+    ---
+    <div style="text-align: center;">
+        If you enjoy this project, please consider giving it a star ⭐️ on <a href="https://github.com/dylannalex/doc2image" target="_blank">GitHub</a> to help others discover it!
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
