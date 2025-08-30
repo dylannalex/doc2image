@@ -198,7 +198,8 @@ def summerize_document(
         .one()
     )
 
-    doc_name = os.path.basename(document_path)
+    doc_name = kwargs.get("file_name")
+    doc_name = doc_name if doc_name else os.path.basename(document_path)
     document = session.query(database.Document).filter_by(name=doc_name).first()
     if not document:
         document = database.Document(name=doc_name, upload_date=datetime.now())
