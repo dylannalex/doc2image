@@ -222,7 +222,7 @@ def render_generation_form():
         st.write("")
         # --- Form Submission Button ---
         submitted = st.form_submit_button(
-            "🚀 Generate Ideas", type="primary", use_container_width=True
+            "🚀 Generate Ideas", type="primary", width="stretch"
         )
 
     if submitted:
@@ -238,7 +238,7 @@ def render_generation_form():
 def render_results_view():
     """Renders the results view and a button to start a new generation."""
     render_output(st.session_state.generated_summary_id)
-    if st.button("✨ Generate New Ideas", use_container_width=True, type="primary"):
+    if st.button("✨ Generate New Ideas", width="stretch", type="primary"):
         st.session_state.generated_summary_id = None
         st.rerun()
 

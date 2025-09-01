@@ -56,7 +56,7 @@ def render_api_key_popover():
     is_key_set = bool(api.get_provider_api_key("OpenAI"))
     label = "Manage API Key" if is_key_set else "⚠️ Set API Key"
     
-    with st.popover(label, use_container_width=True):
+    with st.popover(label, width="stretch"):
         st.markdown("**OpenAI API Key**")
         saved_key = api.get_provider_api_key("OpenAI")
         new_key = st.text_input(
@@ -93,7 +93,7 @@ def render_add_model_form():
     
     c, *_ = st.columns(4)
     with c:
-        if st.button("Add Model", type="primary", use_container_width=True):
+        if st.button("Add Model", type="primary", width="stretch"):
             handle_add_model(provider, model_name)
 
 def render_configured_models_list():
@@ -111,7 +111,7 @@ def render_configured_models_list():
     else:
         model_data = [{"Provider": m.provider_name, "Model Name": m.model_name} for m in all_models]
         df = pd.DataFrame(model_data)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(df, width="stretch", hide_index=True)
 
 # ----------------------------------------------------------------
 # --- Main Page Execution ----------------------------------------
