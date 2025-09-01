@@ -30,9 +30,9 @@ def _get_random_generation_message():
             "Analyzing your document and dreaming up ideas... 🧠",
             "Firing up the inspiration engine... 🚀",
             "Your document is being transformed into image ideas...✨",
-            "Our friendly robot is hard at work on your request... 🤖",
+            "Our friendly robot is hard at work on your request... 🧠",
             "Unlocking the visual potential of your document... 💡",
-            "The AI is now imagining visuals for you... Please wait.",
+            "The AI is now imagining visuals for you... Please wait. 🚀",
         )
     )
 
