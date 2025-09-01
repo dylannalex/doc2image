@@ -39,7 +39,7 @@ with col1:
     st.markdown("Add your API keys and choose which AI models you want to use.")
 
     st.page_link(
-        "pages/2_Images_history.py",
+        "pages/1_Generate_Image_Ideas.py",
         label="**2\. Generate Image Ideas**",
         # icon="🚀",
     )
@@ -47,7 +47,7 @@ with col1:
     st.markdown("Upload a document and let the magic happen!")
 
     st.page_link(
-        "pages/2_Images_history.py",
+        "pages/2_Idea_Gallery.py",
         label="**3\. Visit Your Idea Gallery**",
         # icon="🖼️",
     )
