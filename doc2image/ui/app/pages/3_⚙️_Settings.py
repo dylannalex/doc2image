@@ -29,7 +29,7 @@ def handle_add_model(provider: str, model_name: str):
 
     # Proceed with adding the model
     try:
-        with st.spinner(f"Verifying and adding '{model_name}'..."):
+        with st.spinner(f"Verifying and adding '{model_name}'. This can take a minute..."):
             api.add_llm_model(
                 model_name=model_name,
                 provider_name=provider,
@@ -56,7 +56,7 @@ def render_api_key_popover():
     is_key_set = bool(api.get_provider_api_key("OpenAI"))
     label = "Manage API Key" if is_key_set else "⚠️ Set API Key"
     
-    with st.popover(label, use_container_width=True):
+    with st.popover(label, width="stretch"):
         st.markdown("**OpenAI API Key**")
         saved_key = api.get_provider_api_key("OpenAI")
         new_key = st.text_input(
@@ -71,7 +71,7 @@ def render_api_key_popover():
 
 def render_add_model_form():
     """Renders the complete form for adding a new model, including provider selection."""
-    st.subheader("Add a New Model")
+    st.subheader("Select Provider")
     
     col1, col2 = st.columns([2, 1])
     with col1:
@@ -88,11 +88,12 @@ def render_add_model_form():
     if provider == "OpenAI" and not api.get_provider_api_key("OpenAI"):
         st.warning("An OpenAI API key is required. Click 'Set API Key' above to add one.", icon="🔑")
 
-    model_name = st.text_input("Model Name", placeholder="e.g., gpt-4o, llama3")
+    st.subheader("Select Model")
+    model_name = st.text_input("Select Model", placeholder="e.g., gpt-4o, llama3", label_visibility="collapsed")
     
     c, *_ = st.columns(4)
     with c:
-        if st.button("Add Model", type="primary", use_container_width=True):
+        if st.button("Add Model", type="primary", width="stretch"):
             handle_add_model(provider, model_name)
 
 def render_configured_models_list():
@@ -110,7 +111,7 @@ def render_configured_models_list():
     else:
         model_data = [{"Provider": m.provider_name, "Model Name": m.model_name} for m in all_models]
         df = pd.DataFrame(model_data)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(df, width="stretch", hide_index=True)
 
 # ----------------------------------------------------------------
 # --- Main Page Execution ----------------------------------------

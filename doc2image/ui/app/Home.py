@@ -33,29 +33,29 @@ with col1:
 
     st.page_link(
         "pages/3_⚙️_Settings.py",
-        label="**1\. Configure Your Models (One-Time Setup)**",
+        label="**1\\. Configure Your Models (One-Time Setup)**",
         # icon="⚙️",
     )
     st.markdown("Add your API keys and choose which AI models you want to use.")
 
     st.page_link(
-        "pages/2_Images_history.py",
-        label="**2\. Generate Image Ideas**",
+        "pages/1_Generate_Image_Ideas.py",
+        label="**2\\. Generate Image Ideas**",
         # icon="🚀",
     )
 
     st.markdown("Upload a document and let the magic happen!")
 
     st.page_link(
-        "pages/2_Images_history.py",
-        label="**3\. Visit Your Idea Gallery**",
+        "pages/2_Idea_Gallery.py",
+        label="**3\\. Visit Your Idea Gallery**",
         # icon="🖼️",
     )
     st.markdown("Browse your creations and use them in your favorite image generator.")
 
 with col2:
     st.markdown("<div style='height: 100px;'></div>", unsafe_allow_html=True)
-    st.image("assets/robot-painting-a-landscape.png", use_container_width=True)
+    st.image("assets/robot-painting-a-landscape.png", width="stretch")
 
 # --- Footer ---
 st.markdown(

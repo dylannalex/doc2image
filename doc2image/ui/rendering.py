@@ -34,7 +34,7 @@ def render_output(summary_session_id: int):
             # Display ideas in a DataFrame for a clean, table-like view.
             df_prompts = pd.DataFrame({"Image Idea": prompts})
             df_prompts.index = range(1, len(df_prompts) + 1)
-            st.dataframe(df_prompts, use_container_width=True)
+            st.dataframe(df_prompts, width="stretch")
 
             # Provide a convenient download button for the generated ideas.
             st.download_button(
@@ -112,7 +112,7 @@ def render_output(summary_session_id: int):
         ]
         if chunk_data:
             st.dataframe(
-                pd.DataFrame(chunk_data), use_container_width=True, hide_index=True
+                pd.DataFrame(chunk_data), width="stretch", hide_index=True
             )
         else:
             st.info("No chunk summaries were generated for this session.")
