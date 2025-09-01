@@ -29,7 +29,7 @@ def handle_add_model(provider: str, model_name: str):
 
     # Proceed with adding the model
     try:
-        with st.spinner(f"Verifying and adding '{model_name}'..."):
+        with st.spinner(f"Verifying and adding '{model_name}'. This can take a minute..."):
             api.add_llm_model(
                 model_name=model_name,
                 provider_name=provider,
@@ -71,7 +71,7 @@ def render_api_key_popover():
 
 def render_add_model_form():
     """Renders the complete form for adding a new model, including provider selection."""
-    st.subheader("Add a New Model")
+    st.subheader("Select Provider")
     
     col1, col2 = st.columns([2, 1])
     with col1:
@@ -88,7 +88,8 @@ def render_add_model_form():
     if provider == "OpenAI" and not api.get_provider_api_key("OpenAI"):
         st.warning("An OpenAI API key is required. Click 'Set API Key' above to add one.", icon="🔑")
 
-    model_name = st.text_input("Model Name", placeholder="e.g., gpt-4o, llama3")
+    st.subheader("Select Model")
+    model_name = st.text_input("Select Model", placeholder="e.g., gpt-4o, llama3", label_visibility="collapsed")
     
     c, *_ = st.columns(4)
     with c:
