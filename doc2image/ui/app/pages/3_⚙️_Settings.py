@@ -69,6 +69,13 @@ def render_api_key_popover():
         if st.button("Save Key"):
             handle_save_api_key(new_key)
 
+        # Friendly hint + links
+        st.caption(
+            "Don’t have a key yet? Create one in your OpenAI account. "
+            "[OpenAI API Keys](https://platform.openai.com/api-keys)"
+        )
+
+
 def render_add_model_form():
     """Renders the complete form for adding a new model, including provider selection."""
     st.subheader("Select Provider")
@@ -88,13 +95,25 @@ def render_add_model_form():
     if provider == "OpenAI" and not api.get_provider_api_key("OpenAI"):
         st.warning("An OpenAI API key is required. Click 'Set API Key' above to add one.", icon="🔑")
 
+    if provider == "OpenAI":
+        placeholder = "e.g., gpt-4o, gpt-4.1-mini, gpt-4.1-nano"
+    if provider == "Ollama":
+        placeholder = "e.g., deepseek-r1:7b, qwen3:1.7b, llama3.1:8b"
+
     st.subheader("Select Model")
-    model_name = st.text_input("Select Model", placeholder="e.g., gpt-4o, llama3", label_visibility="collapsed")
+    model_name = st.text_input("Select Model", placeholder=placeholder, label_visibility="collapsed")
     
-    c, *_ = st.columns(4)
+    c, *_ = st.columns(3)
     with c:
         if st.button("Add Model", type="primary", width="stretch"):
             handle_add_model(provider, model_name)
+
+        # Quick model links (compact)
+        if provider == "OpenAI":
+            st.caption("Find [OpenAI Models](https://platform.openai.com/docs/pricing).")
+        elif provider == "Ollama":
+            st.caption("Find [Ollama Models](https://ollama.com/library).")
+
 
 def render_configured_models_list():
     """Fetches and displays the list of currently configured models in a dataframe."""
