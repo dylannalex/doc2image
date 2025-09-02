@@ -173,8 +173,10 @@ def render_generation_form():
                 icon="⚠️",
             )
             st.page_link("pages/3_⚙️_Settings.py", label="Go to Settings", icon="⚙️")
-            st.stop()
+            st.form_submit_button("🚀 Generate Ideas", disabled=True)
 
+            return
+        
         model_options = {
             f"{m.model_name} ({m.provider_name})": (m.model_name, m.provider_name)
             for m in all_models
