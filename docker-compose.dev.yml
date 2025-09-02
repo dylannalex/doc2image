@@ -1,0 +1,26 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./doc2image:/app/doc2image
+      - ./assets:/app/assets
+      - doc2image-data:/app/data
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+    container_name: doc2image-dev
+
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./data/ollama_models:/root/.ollama
+    command: serve 
+
+volumes:
+  doc2image-data:
+  ollama_models:
