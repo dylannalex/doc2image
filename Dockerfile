@@ -35,6 +35,6 @@ VOLUME ["/app/data"]
 CMD ["python", "-m", "streamlit", "run", "doc2image/ui/app/Home.py", "--server.port=8000"]
 
 # ------------------------------- Metadata ------------------------------- #
-LABEL version="1.0"
-LABEL description="Turn your documents into stunning AI-generated images."
+LABEL version="0.0.1"
+LABEL description="Turn any document into ready-to-use AI image prompts."
 LABEL maintainer="Dylan Tintenfich"
