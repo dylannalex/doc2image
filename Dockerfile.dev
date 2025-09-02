@@ -1,0 +1,35 @@
+# ------------------------------- Builder Stage ------------------------------- #
+FROM python:3.13-bookworm AS development
+
+# Install build-essential for any C extensions that might be needed by dependencies
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    build-essential && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Download and install UV for fast dependency management
+ADD https://astral.sh/uv/install.sh /install.sh
+RUN chmod +x /install.sh && /install.sh && rm /install.sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy only the dependency definition file
+COPY ./pyproject.toml .
+
+# Create a virtual environment and install dependencies using uv
+# This step is cached as long as pyproject.toml doesn't change
+RUN uv venv && uv sync
+
+# ------------------------------- Production Stage ------------------------------- #
+# Set the PATH to include the virtual environment's bin directory
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Set the database URL environment variable
+ENV DATABASE_URL="sqlite:///data/doc2image.db"
+
+# Expose the port Streamlit will run on
+EXPOSE 8000
+
+# The command to start the Streamlit application
+CMD ["python", "-m", "streamlit", "run", "doc2image/ui/app/Home.py", "--server.port=8000"]
