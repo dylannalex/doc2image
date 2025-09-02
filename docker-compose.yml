@@ -1,6 +1,6 @@
 services:
   doc2image:
-    image: dylantinten/doc2image:v1.0
+    image: dylantinten/doc2image:latest
     ports:
       - "8000:8000"
     volumes:
