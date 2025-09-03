@@ -4,28 +4,29 @@
   <img src="assets/robot-painting-a-landscape.png?raw=true">
 </p>
 
-Doc2Image is an AI-powered app that transforms your documents into creative image ideas. Just upload a file (PDF, TXT, DOCX, Markdown and more) and Doc2Image will read the content, highlight the key points, and create visual descriptions ready to use with your favorite image generation platforms like MidJourney, DALL·E, ChatGPT, and more.
+Turn any document into a gallery of AI‑ready image ideas. Upload any file (PDF, DOCX, TXT, and more) and Doc2Image will read it, summarize the content, and generate a list of unique visual concepts you can take to the image generator of your choice. Perfect for blog posts, presentations, decks, social posts—or just sparking your imagination.
 
-## 💻 Demo
+## Why You’ll Love It
 
-https://github.com/user-attachments/assets/ed499dfd-7326-4788-a419-fdb4852e55a9
+- **Intuitive Interface:** A clean, guided experience from start to finish.
+- **Flexible AI:** Use OpenAI models or go local via Ollama—your call.
+- **Idea History:** Never lose a great idea with the built-in idea gallery.
+- **Customizable:** Fine-tune the AI's creativity to get the perfect results.
+- **Budget-friendly:** works great with small models (e.g., `gpt-4.1-nano`, `deepseek-r1:1.5b`), so **it’s really cheap to run**.
 
-## ✨ Features
+## How It Works (3 Quick Steps)
 
-- **Beautiful, intuitive interface** — no technical skills required
-- **Quick setup** — easy to install and start using
-- **Flexible AI support** — works with OpenAI & local models (like LLaMA, Gemma)
-- **Prompt history** — keep track of all your generated images
-- **Fully customizable** — adjust model settings, summary size, and prompt behavior to fit your workflow
+1. **Configure your models (one‑time):** Add API keys and pick your providers in Settings.
+2. **Generate amazing image ideas:** Upload a document and let the app craft tailored visual prompts.
+3. **Browse your Idea Gallery:** Revisit past sessions and reuse your favorite prompts.
 
-## 📚 How It Works
+> **Disclaimer:** Doc2Image does not generate images. It generates image ideas (prompts) you can paste into any AI image generator (e.g., Grok, ChatGPT, WhatsApp, etc.).
 
-1. **Upload a document** — PDF, DOCX, Markdown, TXT and more!
-2. **Choose a model** — OpenAI or a local Ollama model  
-3. **Customize your request** — Select how many image prompts you want, and (optionally) tweak advanced settings like temperature or chunk size  
-4. **Generate amazing image ideas** — Doc2Image transforms your document into stunning, ready-to-use prompts
+##  Demo
 
-## 🛠️ Getting Started
+https://github.com/user-attachments/assets/d200e132-16de-452e-b584-496e49bd6c1f
+
+## Getting Started
 
 You can run doc2image in two ways depending on your needs:
 
@@ -41,13 +42,13 @@ You can run doc2image in two ways depending on your needs:
 2. Pull the latest image from Docker Hub:
 
 ```bash
-docker pull dylantinten/doc2image:v1.0
+docker pull dylantinten/doc2image:latest
 ```
 
 3. Run the application:
 
 ```bash
-docker run --name doc2image -p 8000:8000 -v data:/app/data dylantinten/doc2image:v1.0
+docker run --name doc2image -p 8000:8000 -v data:/app/data dylantinten/doc2image:latest
 ```
 > 💡 This command will create a `data` folder in your current working directory to store output files (do not delete this folder). You can change `data` to any path you prefer, or `cd` into the directory where you want your data to live before running the command.
 

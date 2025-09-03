@@ -3,467 +3,318 @@ from time import time
 from datetime import datetime
 from typing import List
 
-from .docs import chunkenize_document, AVAILABLE_FORMATS
-from .prompt import Prompt
-from .database import (
-    LlmModel,
-    LlmProvider,
-    Document,
-    DocumentSummarySession,
-    ChunkSummary,
-    ImagePromptsSession,
-    ImagePrompt,
-    Session,
-    database_session_decorator,
-)
-from .pipeline import DocumentSummarizer, ImagePromptsGenerator
-from .llm import create_llm, PROVIDER_TO_LLM, PROVIDERS, BaseLLM
+from sqlalchemy.orm import joinedload, selectinload
+
+from . import schemas
+from . import database
+from . import docs
+from . import prompt
+from . import pipeline
+from . import llm
 
 
-@database_session_decorator
-def setup_llm_providers(session: Session) -> None:
+# --- Setup & Configuration Functions ---
+@database.database_session_decorator
+def setup_llm_providers(session: database.Session) -> None:
     """
-    Set up the LLM providers by pulling their models.
+    Set up the LLM providers by creating them if they don't exist.
     """
-    for provider_name in PROVIDERS:
-        exists: List[LlmProvider] = (
-            session.query(LlmProvider).filter_by(name=provider_name).all()
-        )
-        if exists:
-            continue
-        provider = LlmProvider(name=provider_name, available=True)
-        session.add(provider)
-        session.flush()
+    for provider_name in llm.PROVIDERS:
+        if (
+            not session.query(database.LlmProvider)
+            .filter_by(name=provider_name)
+            .first()
+        ):
+            provider = database.LlmProvider(name=provider_name, available=True)
+            session.add(provider)
 
 
-# Always run this function to set up the LLM providers
-# in case the database is empty.
+# Always run this function to set up the LLM providers on startup.
 setup_llm_providers()
 
 
 def get_llm_providers() -> list[str]:
-    """
-    Get a list of available LLM providers.
-
-    Returns:
-        list[str]: A list of available LLM provider names.
-    """
-    return PROVIDERS
+    """Get a list of available LLM providers."""
+    return llm.PROVIDERS
 
 
 def get_available_doc_formats() -> list[str]:
-    """
-    Get a list of available document formats for upload.
-
-    Returns:
-        list[str]: A list of supported document formats.
-    """
-    return AVAILABLE_FORMATS
+    """Get a list of available document formats for upload."""
+    return docs.AVAILABLE_FORMATS
 
 
-def get_provider_api_key(session: Session, provider_name: str) -> str | None:
-    """
-    Get the API key for a specific LLM provider.
-
-    Args:
-        session (Session): The database session.
-        provider_name (str): The name of the LLM provider.
-
-    Returns:
-        str | None: The API key for the provider, or None if not found.
-    """
-    provider: LlmProvider = (
-        session.query(LlmProvider).filter_by(name=provider_name).first()
-    )
-    assert (
-        provider is not None
-    ), f"LLM provider '{provider_name}' not found in the database."
-
-    return provider.api_key
+@database.database_session_decorator
+def get_provider_api_key(session: database.Session, provider_name: str) -> str | None:
+    """Get the API key for a specific LLM provider."""
+    provider = session.query(database.LlmProvider).filter_by(name=provider_name).first()
+    return provider.api_key if provider else None
 
 
-def update_provider_api_key(session: Session, provider_name: str, api_key: str) -> None:
-    """
-    Update the API key for a specific LLM provider.
-
-    Args:
-        session (Session): The database session.
-        provider_name (str): The name of the LLM provider.
-        api_key (str): The new API key for the provider.
-    """
-    provider: LlmProvider = (
-        session.query(LlmProvider).filter_by(name=provider_name).first()
-    )
-    assert (
-        provider is not None
-    ), f"LLM provider '{provider_name}' not found in the database."
-
-    provider.api_key = api_key
-    session.flush()
+@database.database_session_decorator
+def update_provider_api_key(
+    session: database.Session, provider_name: str, api_key: str
+) -> None:
+    """Update the API key for a specific LLM provider."""
+    provider = session.query(database.LlmProvider).filter_by(name=provider_name).first()
+    if provider:
+        provider.api_key = api_key
 
 
-def get_available_providers(session: Session) -> List[str]:
-    """
-    Get a list of available LLM providers.
-
-    Returns:
-        list[str]: A list of available LLM provider names.
-    """
-    available_providers: List[LlmProvider] = (
-        session.query(LlmProvider).filter_by(available=True).all()
-    )
-    return [provider.name for provider in available_providers]
-
-
-def get_summary_by_id(
-    session: Session, summary_id: int
-) -> DocumentSummarySession | None:
-    result: DocumentSummarySession = (
-        session.query(DocumentSummarySession).filter_by(id=summary_id).first()
-    )
-
-    return result
-
-
-def add_llm_model(
-    session: Session,
-    model_name: str,
-    provider_name: str,
-    api_key: str,
-    available: bool = True,
-) -> LlmModel:
-    """
-    Add a new LLM model to the database.
-
-    Args:
-        model_name (str): The name of the LLM model.
-        provider_name (str): The name of the LLM provider.
-        available (bool): Availability status of the model.
-        api_key (str): The API key for the model.
-
-    Returns:
-        LlmModel: The created LLM model entry.
-    """
-    # Check if the provider exists in the database
-    providers: List[LlmProvider] = (
-        session.query(LlmProvider).filter_by(name=provider_name).all()
-    )
-    assert (
-        len(providers) > 0
-    ), f"LLM provider '{provider_name}' not found in the database."
-    assert len(providers) == 1, "Multiple LLM providers found with the same name."
-    llm_provider: LlmProvider = providers[0]
-    assert llm_provider.available, f"LLM provider '{provider_name}' is unavailable."
-
-    # Pull the model from the provider
-    # This will raise an error if the model does not exist
-    llm_cls: type[BaseLLM] = PROVIDER_TO_LLM[llm_provider.name]
-    llm_cls.pull_model(model_name=model_name, api_key=api_key)
-
-    # Check if the model already exists in the database
-    existing_models: List[LlmModel] = (
-        session.query(LlmModel)
-        .filter_by(name=model_name, provider_id=llm_provider.id)
+@database.database_session_decorator
+def get_all_llm_models(session: database.Session) -> list[str]:
+    """Get all LLM models from the database as DTOs."""
+    models = (
+        session.query(database.LlmModel)
+        .options(joinedload(database.LlmModel.provider))
         .all()
     )
-    if existing_models:
-        return existing_models[0]
 
-    # Create a new LLM model entry
-    llm_model = LlmModel(
-        name=model_name,
-        available=available,
-        provider_id=llm_provider.id,
+    return [
+        schemas.LlmModelProviderDTO(model_name=m.name, provider_name=m.provider.name)
+        for m in models
+    ]
+
+
+@database.database_session_decorator
+def add_llm_model(
+    session: database.Session, model_name: str, provider_name: str, api_key: str
+) -> None:
+    """Add a new LLM model to the database."""
+    provider = session.query(database.LlmProvider).filter_by(name=provider_name).first()
+    if not provider:
+        raise ValueError(f"LLM provider '{provider_name}' not found.")
+
+    llm_cls: type[llm.BaseLLM] = llm.PROVIDER_TO_LLM[provider.name]
+    llm_cls.pull_model(model_name=model_name, api_key=api_key)
+
+    existing_model = (
+        session.query(database.LlmModel)
+        .filter_by(name=model_name, provider_id=provider.id)
+        .first()
     )
+    if existing_model:
+        return
 
+    llm_model = database.LlmModel(
+        name=model_name, available=True, provider_id=provider.id
+    )
     session.add(llm_model)
 
-    # Flush the session to ensure the model is saved
-    session.flush()
-
-    return llm_model
-
-
-def get_all_llm_models(session: Session) -> List[LlmModel]:
-    """
-    Get all LLM models from the database.
-
-    Returns:
-        list[LlmModel]: A list of all LLM models.
-    """
-    return session.query(LlmModel).all()
-
-
-def summerize_document(
-    session: Session,
-    document_path: str,
-    chunk_size: int,
-    chunk_overlap: int,
-    separators: list[str],
-    is_separator_regex: bool,
-    keep_separator: str,
-    strip_whitespace: bool,
-    llm_api_key: str,
-    llm_model_name: str,
-    llm_temperature: float,
-    llm_top_p: float,
-    llm_top_k: int,
-    llm_provider: str,
-    max_document_summary_size: int,
-    max_chunk_summary_size: int,
-    summarize_chunk_prompt_messages: list[dict[str, str]],
-    summarize_chunk_prompt_parameters: list[str],
-    generate_document_summary_prompt_messages: list[dict[str, str]],
-    generate_document_summary_prompt_parameters: list[str],
-) -> DocumentSummarySession:
-    """
-    Summarizes a document by splitting it into chunks and generating summaries.
-
-    Args:
-        document_path (str): Path to the document.
-        chunk_size (int): Maximum size of chunks to return.
-        chunk_overlap (int): Overlap in characters between chunks.
-        separators (list[str]): List of separators to use for splitting.
-        is_separator_regex (bool): Whether the separators are regex patterns.
-        keep_separator (str): Whether to keep the separator and where to place it in each corresponding chunk.
-        strip_whitespace (bool): If `True`, strips whitespace from the start and end of every document.
-        llm_api_key (str): The API key for the model (if required).
-        llm_model_name (str): The name of the model to load.
-        llm_temperature (float): The temperature setting for the model.
-        llm_top_p (float): The top-p setting for the model.
-        llm_top_k (int): The top-k setting for the model.
-        llm_provider (str): The name of the API to use (e.g., "ollama", "openai").
-        max_document_summary_size (int): Maximum size of the document summary.
-        max_chunk_summary_size (int): Maximum size of each chunk summary.
-        summarize_chunk_prompt_messages (list[dict[str, str]]): Messages for summarizing each chunk.
-        summarize_chunk_prompt_parameters (list[str]): A list of parameter names to be used in the prompt.
-        generate_document_summary_prompt_messages (list[dict[str, str]]): Messages for generating the document summary.
-        generate_document_summary_prompt_parameters (list[str]): A list of parameter names to be used in the prompt.
-
-    Returns:
-        DocumentSummarySession: The document summary session created.
-    """
-    chunks = chunkenize_document(
-        document_path,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separators=separators,
-        is_separator_regex=is_separator_regex,
-        keep_separator=keep_separator,
-        strip_whitespace=strip_whitespace,
+# --- Core Pipeline & Data Retrieval Functions ---
+def _get_full_summary_query(session: database.Session):
+    """Helper to build a fully eager-loaded query for a summary session."""
+    return session.query(database.DocumentSummarySession).options(
+        joinedload(database.DocumentSummarySession.document),
+        joinedload(database.DocumentSummarySession.llm_model).joinedload(
+            database.LlmModel.provider
+        ),
+        selectinload(database.DocumentSummarySession.chunk_summaries),
+        selectinload(database.DocumentSummarySession.image_prompt_sessions).options(
+            joinedload(database.ImagePromptsSession.llm_model).joinedload(
+                database.LlmModel.provider
+            ),
+            selectinload(database.ImagePromptsSession.prompts),
+        ),
     )
 
-    doc_summerizer = DocumentSummarizer(
-        llm=create_llm(
-            model_name=llm_model_name,
-            provider=llm_provider,
-            temperature=llm_temperature,
-            top_p=llm_top_p,
-            top_k=llm_top_k,
-            api_key=llm_api_key,
+
+@database.database_session_decorator
+def get_summary_by_id(
+    session: database.Session, summary_id: int
+) -> schemas.DocumentSummarySessionDTO | None:
+    """Get a single summary session by its ID, with all related data."""
+    result: database.DocumentSummarySession = (
+        _get_full_summary_query(session)
+        .filter(database.DocumentSummarySession.id == summary_id)
+        .first()
+    )
+
+    return schemas.DocumentSummarySessionDTO.model_validate(result) if result else None
+
+
+@database.database_session_decorator
+def get_all_document_summary_sessions(
+    session: database.Session,
+) -> List[schemas.DocumentSummarySessionDTO]:
+    """Get all document summary sessions with related data eager loaded."""
+    results = (
+        _get_full_summary_query(session)
+        .order_by(database.DocumentSummarySession.generation_date.desc())
+        .all()
+    )
+    return [schemas.DocumentSummarySessionDTO.model_validate(r) for r in results]
+
+
+@database.database_session_decorator
+def summerize_document(
+    session: database.Session, **kwargs
+) -> schemas.DocumentSummarySessionDTO:
+    """
+    Summarizes a document and returns the created session as a DTO.
+    Accepts all arguments for summarization via kwargs.
+    """
+    document_path = kwargs["document_path"]
+    chunks = docs.chunkenize_document(
+        document_path,
+        chunk_size=kwargs["chunk_size"],
+        chunk_overlap=kwargs["chunk_overlap"],
+        separators=kwargs["separators"],
+        is_separator_regex=kwargs["is_separator_regex"],
+        keep_separator=kwargs["keep_separator"],
+        strip_whitespace=kwargs["strip_whitespace"],
+    )
+
+    doc_summarizer = pipeline.DocumentSummarizer(
+        llm=llm.create_llm(
+            model_name=kwargs["llm_model_name"],
+            provider=kwargs["llm_provider"],
+            temperature=kwargs["llm_temperature"],
+            top_p=kwargs["llm_top_p"],
+            top_k=kwargs["llm_top_k"],
+            api_key=kwargs["llm_api_key"],
         ),
         document_chunks=chunks,
-        max_document_summary_size=max_document_summary_size,
-        max_chunk_summary_size=max_chunk_summary_size,
-        summarize_chunk_prompt=Prompt(
-            messages=summarize_chunk_prompt_messages,
-            parameters=summarize_chunk_prompt_parameters,
+        max_document_summary_size=kwargs["max_document_summary_size"],
+        max_chunk_summary_size=kwargs["max_chunk_summary_size"],
+        summarize_chunk_prompt=prompt.Prompt(
+            messages=kwargs["summarize_chunk_prompt_messages"],
+            parameters=kwargs["summarize_chunk_prompt_parameters"],
         ),
-        generate_document_summary_prompt=Prompt(
-            messages=generate_document_summary_prompt_messages,
-            parameters=generate_document_summary_prompt_parameters,
+        generate_document_summary_prompt=prompt.Prompt(
+            messages=kwargs["generate_document_summary_prompt_messages"],
+            parameters=kwargs["generate_document_summary_prompt_parameters"],
         ),
     )
 
     start_time = time()
-    document_summary, chunk_summaries = doc_summerizer.run()
-    session_time = time() - start_time
-    generation_date = datetime.now()
+    document_summary, chunk_summaries = doc_summarizer.run()
 
-    # Retrieve LLM provider from the database
-    llm_providers: List[LlmProvider] = (
-        session.query(LlmProvider).filter_by(name=llm_provider).all()
+    provider = (
+        session.query(database.LlmProvider).filter_by(name=kwargs["llm_provider"]).one()
     )
-    assert bool(
-        llm_providers
-    ), f"LLM provider {llm_provider} not found in the database."
-    assert len(llm_providers) == 1, "Multiple LLM providers found with the same name."
-    llm_provider_obj: LlmProvider = llm_providers[0]
+    llm_model = (
+        session.query(database.LlmModel)
+        .filter_by(name=kwargs["llm_model_name"], provider_id=provider.id)
+        .one()
+    )
 
-    # Retrieve LLM model from the database
-    llm_models: List[LlmModel] = (
-        session.query(LlmModel)
-        .filter_by(name=llm_model_name, provider_id=llm_provider_obj.id)
-        .all()
-    )
-    assert bool(llm_models), f"LLM model {llm_model_name} not found in the database."
-    assert len(llm_models) == 1, "Multiple LLM models found with the same name."
-    llm_model: LlmModel = llm_models[0]
-
-    # Retrieve or create the document entry in the database
-    documents: List[Document] = (
-        session.query(Document).filter_by(name=os.path.basename(document_path)).all()
-    )
-    if not documents:
-        document = Document(
-            name=os.path.basename(document_path), upload_date=generation_date
-        )
+    doc_name = kwargs.get("file_name")
+    doc_name = doc_name if doc_name else os.path.basename(document_path)
+    document = session.query(database.Document).filter_by(name=doc_name).first()
+    if not document:
+        document = database.Document(name=doc_name, upload_date=datetime.now())
         session.add(document)
         session.flush()
-    else:
-        assert len(documents) == 1, "Multiple documents found with the same name."
-        document: Document = documents[0]
 
-    # Create a new document summary session
-    summary_session = DocumentSummarySession(
+    summary_session = database.DocumentSummarySession(
         document_id=document.id,
         document_summary=document_summary,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        max_chunk_summary_size=max_chunk_summary_size,
-        max_document_summary_size=max_document_summary_size,
         llm_model_id=llm_model.id,
-        llm_temperature=llm_temperature,
-        llm_top_p=llm_top_p,
-        llm_top_k=llm_top_k,
-        generation_date=generation_date,
-        session_time=session_time,
+        session_time=(time() - start_time),
+        generation_date=datetime.now(),
+        # Pass through all other relevant kwargs directly from the UI
+        chunk_size=kwargs["chunk_size"],
+        chunk_overlap=kwargs["chunk_overlap"],
+        max_chunk_summary_size=kwargs["max_chunk_summary_size"],
+        max_document_summary_size=kwargs["max_document_summary_size"],
+        llm_temperature=kwargs["llm_temperature"],
+        llm_top_p=kwargs["llm_top_p"],
+        llm_top_k=kwargs["llm_top_k"],
     )
     session.add(summary_session)
-    session.flush()
 
-    # Add chunk summaries to the database
-    for chunk_summary_str in chunk_summaries:
-        chunk_summary = ChunkSummary(
-            chunk_summary=chunk_summary_str,
-            document_summary_session_id=summary_session.id,
+    for summary_str in chunk_summaries:
+        session.add(
+            database.ChunkSummary(
+                chunk_summary=summary_str, document_summary=summary_session
+            )
         )
-        session.add(chunk_summary)
+
     session.flush()
+    # Eagerly load the data for the DTO before the session closes
+    loaded_session = (
+        _get_full_summary_query(session)
+        .filter(database.DocumentSummarySession.id == summary_session.id)
+        .one()
+    )
+    return schemas.DocumentSummarySessionDTO.model_validate(loaded_session)
 
-    return summary_session
 
-
+@database.database_session_decorator
 def generate_image_prompts(
-    session: Session,
-    summary_session: DocumentSummarySession,
-    document_path: str,
-    document_summary: str,
-    total_prompts_to_generate: int,
-    generate_image_prompts_prompt_messages: list[dict[str, str]],
-    generate_image_prompts_prompt_parameters: list[str],
-    llm_api_key: str,
-    llm_model_name: str,
-    llm_temperature: float,
-    llm_top_p: float,
-    llm_top_k: int,
-    provider_name: str,
-) -> ImagePromptsSession:
+    session: database.Session, **kwargs
+) -> schemas.ImagePromptsSessionDTO:
     """
-    Generates image prompts based on the document summary.
-
-    Args:
-        summary_session (DocumentSummarySession): The document summary session to use.
-        document_path (str): Path to the document.
-        document_summary (str): The document summary to use for generating image prompts.
-        total_prompts_to_generate (int): The total number of prompts to generate.
-        generate_image_prompts_prompt_messages (list[dict[str, str]]): Messages for generating image prompts.
-        generate_image_prompts_prompt_parameters (list[str]): A list of parameter names to be used in the prompt.
-        llm_api_key (str): The API key for the model (if required).
-        llm_model_name (str): The name of the model to load.
-        llm_temperature (float): The temperature setting for the model.
-        llm_top_p (float): The top-p setting for the model.
-        llm_top_k (int): The top-k setting for the model.
-        provider_name (str): The name of the API to use (e.g., "ollama", "openai").
-
-    Returns:
-        ImagePromptsSession: The image prompts session created.
+    Generates image prompts for a given summary session and returns the new session as a DTO.
+    Accepts all arguments for prompt generation via kwargs.
     """
-    image_prompts_generator = ImagePromptsGenerator(
-        llm=create_llm(
-            model_name=llm_model_name,
-            temperature=llm_temperature,
-            top_p=llm_top_p,
-            top_k=llm_top_k,
-            api_key=llm_api_key,
-            provider=provider_name,
+    summary_session_id = kwargs.pop("summary_session_id")
+    summary_session = (
+        session.query(database.DocumentSummarySession)
+        .filter_by(id=summary_session_id)
+        .one()
+    )
+
+    image_prompts_generator = pipeline.ImagePromptsGenerator(
+        llm=llm.create_llm(
+            model_name=kwargs["llm_model_name"],
+            provider=kwargs["provider_name"],
+            temperature=kwargs["llm_temperature"],
+            top_p=kwargs["llm_top_p"],
+            top_k=kwargs["llm_top_k"],
+            api_key=kwargs["llm_api_key"],
         ),
-        document_summary=document_summary,
-        total_prompts_to_generate=total_prompts_to_generate,
-        generate_image_prompts_prompt=Prompt(
-            messages=generate_image_prompts_prompt_messages,
-            parameters=generate_image_prompts_prompt_parameters,
+        document_summary=kwargs["document_summary"],
+        total_prompts_to_generate=kwargs["total_prompts_to_generate"],
+        generate_image_prompts_prompt=prompt.Prompt(
+            messages=kwargs["generate_image_prompts_prompt_messages"],
+            parameters=kwargs["generate_image_prompts_prompt_parameters"],
         ),
     )
 
     start = time()
     image_prompts = image_prompts_generator.run()
-    session_time = time() - start
-    generation_date = datetime.now()
 
-    # Check if the provider exists in the database
-    providers: List[LlmProvider] = (
-        session.query(LlmProvider).filter_by(name=provider_name).all()
+    provider = (
+        session.query(database.LlmProvider)
+        .filter_by(name=kwargs["provider_name"])
+        .one()
     )
-    assert len(providers) == 1, "Multiple LLM providers found with the same name."
-    llm_provider: LlmProvider = providers[0]
-    assert llm_provider.available, f"LLM provider '{provider_name}' is unavailable."
-
-    # Retrieve LLM model from the database
-    llm_models: List[LlmModel] = (
-        session.query(LlmModel)
-        .filter_by(name=llm_model_name, provider_id=llm_provider.id)
-        .all()
+    llm_model = (
+        session.query(database.LlmModel)
+        .filter_by(name=kwargs["llm_model_name"], provider_id=provider.id)
+        .one()
     )
-    assert bool(llm_models), f"LLM model {llm_model_name} not found in the database."
-    assert len(llm_models) == 1, "Multiple LLM models found with the same name."
-    llm_model: LlmModel = llm_models[0]
 
-    # Retrieve or create the document entry in the database
-    documents: List[Document] = (
-        session.query(Document).filter_by(name=os.path.basename(document_path)).all()
-    )
-    if not documents:
-        document = Document(
-            name=os.path.basename(document_path), upload_date=generation_date
-        )
-        session.add(document)
-        session.flush()
-    else:
-        assert len(documents) == 1, "Multiple documents found with the same name."
-        document: Document = documents[0]
-
-    # Create a new image prompts session
-    image_prompts_session = ImagePromptsSession(
+    image_prompts_session = database.ImagePromptsSession(
         document_summary_id=summary_session.id,
         llm_model_id=llm_model.id,
-        llm_temperature=llm_temperature,
-        llm_top_p=llm_top_p,
-        llm_top_k=llm_top_k,
-        generation_date=generation_date,
-        session_time=session_time,
+        session_time=(time() - start),
+        generation_date=datetime.now(),
+        llm_temperature=kwargs["llm_temperature"],
+        llm_top_p=kwargs["llm_top_p"],
+        llm_top_k=kwargs["llm_top_k"],
     )
-
     session.add(image_prompts_session)
-    session.flush()
 
-    # Create image prompts and add them to the database
-    for prompt in image_prompts:
-        image_prompt = ImagePrompt(
-            image_prompts_session_id=image_prompts_session.id,
-            prompt=prompt,
+    for prompt_text in image_prompts:
+        session.add(
+            database.ImagePrompt(
+                prompt=prompt_text, image_prompts_session=image_prompts_session
+            )
         )
-        session.add(image_prompt)
+
     session.flush()
-
-    return image_prompts_session
-
-
-def get_all_document_summary_sessions(session: Session) -> List[DocumentSummarySession]:
-    """
-    Get all document summary sessions from the database.
-
-    Returns:
-        list[DocumentSummarySession]: A list of document summary sessions.
-    """
-    return session.query(DocumentSummarySession).all()
+    # Eagerly load the data for the DTO before the session closes
+    loaded_session = (
+        session.query(database.ImagePromptsSession)
+        .options(
+            joinedload(database.ImagePromptsSession.llm_model).joinedload(
+                database.LlmModel.provider
+            ),
+            selectinload(database.ImagePromptsSession.prompts),
+        )
+        .filter(database.ImagePromptsSession.id == image_prompts_session.id)
+        .one()
+    )
+    return schemas.ImagePromptsSessionDTO.model_validate(loaded_session)
