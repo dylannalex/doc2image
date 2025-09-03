@@ -24,8 +24,7 @@ Turn any document into a gallery of AI‑ready image ideas. Upload any file (PDF
 
 ##  Demo
 
-https://github.com/user-attachments/assets/ed499dfd-7326-4788-a419-fdb4852e55a9
-
+https://github.com/user-attachments/assets/d200e132-16de-452e-b584-496e49bd6c1f
 
 ## Getting Started
 
